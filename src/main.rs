@@ -1,5 +1,6 @@
 //use gtk4 as gtk;
 //https://kornel.ski/rust-sys-crate
+//https://github.com/chris-zen/coremidi/blob/master/examples/receive.rs
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow };
@@ -16,13 +17,15 @@ fn main() {
             .application(app)
             .title("Moog Matriarch Global Settings")
             .default_width(550)
-            .default_height(550)
+            .default_height(400)
             .build();
         
-        let button = gtk::Button::with_label("Click me!");
+        let button = gtk::Button::with_label("Connect");
         button.connect_clicked(|_| {
-            eprintln!("Clicked!");
+            eprintln!("Connect clicked!");
         });
+
+        let dd = gtk::DropDown::from_strings(&["abc", "def"]);
 
         let list_box = gtk::ListBox::new();
         for number in 0..=74 {
@@ -37,9 +40,14 @@ fn main() {
             .child(&list_box)
             .build();
 
+            let hbox: gtk::Box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+            hbox.set_homogeneous(true);
+            hbox.prepend(&button);
+            hbox.append(&dd);
+
         let vbox: gtk::Box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         vbox.set_homogeneous(false);
-        vbox.prepend(&button);
+        vbox.prepend(&hbox);
         vbox.append(&scrolled_window);
 
         window.set_child(Some(&vbox));
