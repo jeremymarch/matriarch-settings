@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 gtk = { version = "0.4.6", package = "gtk4" }
+coremidi = "0.6.0" # https://github.com/chris-zen/coremidi
