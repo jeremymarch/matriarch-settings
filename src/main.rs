@@ -2,7 +2,7 @@
 //https://kornel.ski/rust-sys-crate
 
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Button};
+use gtk::{Application, ApplicationWindow };
 use coremidi;
 use std::env;
 
@@ -16,18 +16,37 @@ fn main() {
             .application(app)
             .title("Moog Matriarch Global Settings")
             .default_width(550)
-            .default_height(350)
+            .default_height(550)
             .build();
-
-        let button = Button::with_label("Click me!");
+        
+        let button = gtk::Button::with_label("Click me!");
         button.connect_clicked(|_| {
             eprintln!("Clicked!");
         });
-        window.set_child(Some(&button));
 
+        let list_box = gtk::ListBox::new();
+        for number in 0..=74 {
+            let label = gtk::Label::new(Some(&number.to_string()));
+            list_box.append(&label);
+        }
+
+        let scrolled_window = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never) // Disable horizontal scrolling
+            .min_content_width(360)
+            .vexpand(true)
+            .child(&list_box)
+            .build();
+
+        let vbox: gtk::Box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        vbox.set_homogeneous(false);
+        vbox.prepend(&button);
+        vbox.append(&scrolled_window);
+
+        window.set_child(Some(&vbox));
         window.show();
     });
-
+    
+/* 
     let source_index = 0;//get_source_index();
     println!("Source index: {}", source_index);
 
@@ -42,6 +61,8 @@ fn main() {
 
     let input_port = client.input_port("Example Port", callback).unwrap();
     input_port.connect_source(&source).unwrap();
+
+    */
 /* 
     let mut input_line = String::new();
     println!("Press Enter to Finish");
@@ -51,7 +72,7 @@ fn main() {
 */
     application.run();
 
-    input_port.disconnect_source(&source).unwrap();
+    //input_port.disconnect_source(&source).unwrap();
 }
 
 fn get_source_index() -> usize {
