@@ -13,8 +13,19 @@ fn main() {
     let application = Application::builder()
         .application_id("com.philolog.matriarch-settings")
         .build();
+    
 
-    application.connect_activate(|app| {
+    let mut matriarch_index:Option<usize> = None;
+    let v = get_sources();
+    if v.len() > 0 {
+        for (idx, i) in v.iter().enumerate() {
+            if i == "Moog Matriarch" {
+                println!("here");
+                matriarch_index = Some(idx);
+            }
+        }
+    }
+    application.connect_activate(move |app| {
         let window = ApplicationWindow::builder()
             .application(app)
             .title("Moog Matriarch Global Settings")
@@ -28,13 +39,14 @@ fn main() {
         });
 
 
-        let v = get_sources();
+        
+       
         let combo = gtk::ComboBoxText::new();
         if v.len() == 0 {
             combo.append_text("No midi devices connected");
         }
         else {
-            for i in v {
+            for (idx, i) in v.iter().enumerate() {
                 combo.append_text(&i);
             }
         }
@@ -68,22 +80,22 @@ fn main() {
         window.show();
     });
     
+    //if matriarch_index.is_some() {
+        let source_index = matriarch_index.unwrap();
+        println!("Source index: {}", source_index);
 
-    let source_index = 0;//get_source_index();
-    println!("Source index: {}", source_index);
+        let source = coremidi::Source::from_index(source_index).unwrap();
+        println!("Source display name: {}", source.display_name().unwrap());
 
-    let source = coremidi::Source::from_index(source_index).unwrap();
-    println!("Source display name: {}", source.display_name().unwrap());
+        let client = coremidi::Client::new("Example Client").unwrap();
 
-    let client = coremidi::Client::new("Example Client").unwrap();
+        let callback = |packet_list: &coremidi::PacketList| {
+            println!("{}", packet_list);
+        };
 
-    let callback = |packet_list: &coremidi::PacketList| {
-        println!("{}", packet_list);
-    };
-
-    let input_port = client.input_port("Example Port", callback).unwrap();
-    input_port.connect_source(&source).unwrap();
-
+        let input_port = client.input_port("Example Port", callback).unwrap();
+        input_port.connect_source(&source).unwrap();
+    //}
     
 /* 
     let mut input_line = String::new();
@@ -94,7 +106,7 @@ fn main() {
 */
     application.run();
 
-    input_port.disconnect_source(&source).unwrap();
+    //input_port.disconnect_source(&source).unwrap();
 }
 
 fn get_source_index() -> usize {
