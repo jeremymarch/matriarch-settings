@@ -1,6 +1,8 @@
 //use gtk4 as gtk;
 //https://kornel.ski/rust-sys-crate
 //https://github.com/chris-zen/coremidi/blob/master/examples/receive.rs
+//https://github.com/gtk-rs/examples/blob/master/src/bin/listbox_model.rs
+//https://users.rust-lang.org/t/how-to-right-justify-numeric-data-in-gtk-rs-list-store/30538
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow };
@@ -25,8 +27,20 @@ fn main() {
             eprintln!("Connect clicked!");
         });
 
-        let dd = gtk::DropDown::from_strings(&["abc", "def"]);
 
+        let v = get_sources();
+        let combo = gtk::ComboBoxText::new();
+        if v.len() == 0 {
+            combo.append_text("No midi devices connected");
+        }
+        else {
+            for i in v {
+                combo.append_text(&i);
+            }
+        }
+        combo.set_active(Some(0));
+
+        
         let list_box = gtk::ListBox::new();
         for number in 0..=74 {
             let label = gtk::Label::new(Some(&number.to_string()));
@@ -43,7 +57,7 @@ fn main() {
             let hbox: gtk::Box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
             hbox.set_homogeneous(true);
             hbox.prepend(&button);
-            hbox.append(&dd);
+            hbox.append(&combo);
 
         let vbox: gtk::Box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         vbox.set_homogeneous(false);
@@ -54,7 +68,7 @@ fn main() {
         window.show();
     });
     
-/* 
+
     let source_index = 0;//get_source_index();
     println!("Source index: {}", source_index);
 
@@ -70,7 +84,7 @@ fn main() {
     let input_port = client.input_port("Example Port", callback).unwrap();
     input_port.connect_source(&source).unwrap();
 
-    */
+    
 /* 
     let mut input_line = String::new();
     println!("Press Enter to Finish");
@@ -80,7 +94,7 @@ fn main() {
 */
     application.run();
 
-    //input_port.disconnect_source(&source).unwrap();
+    input_port.disconnect_source(&source).unwrap();
 }
 
 fn get_source_index() -> usize {
@@ -124,4 +138,20 @@ fn print_sources() {
             println!("[{}] {}", i, display_name)
         }
     }
+}
+
+fn get_sources() -> Vec<String> {
+    let mut v = Vec::new();
+    for (i, source) in coremidi::Sources.into_iter().enumerate() {
+        if let Some(display_name) = source.display_name() {
+            v.push(display_name);
+            //println!("[{}] {}", i, display_name)
+        }
+    }
+    v
+}
+
+fn demo<T, const N: usize>(v: Vec<T>) -> [T; N] {
+    v.try_into()
+        .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
 }
