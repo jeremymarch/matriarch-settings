@@ -7,7 +7,7 @@
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow };
 use coremidi;
-use std::env;
+//use std::env;
 
 fn main() {
     let application = Application::builder()
@@ -45,7 +45,7 @@ fn main() {
             combo.append_text("No midi devices connected");
         }
         else {
-            for (idx, i) in v.iter().enumerate() {
+            for (_idx, i) in v.iter().enumerate() {
                 combo.append_text(&i);
             }
         }
@@ -83,44 +83,52 @@ fn main() {
     let source;
     let input_port;
     let client;
-    if matriarch_index.is_some() {
-        let source_index = matriarch_index.unwrap();
-        //println!("Source index: {}", source_index);
+    match matriarch_index {
+        Some(matriarch_index) => {
+            
+            //println!("Source index: {}", matriarch_index);
 
-        source = coremidi::Source::from_index(source_index);
-        if source.is_some() {
-            //println!("Source display name: {}", source.display_name().unwrap());
+            source = coremidi::Source::from_index(matriarch_index);
+            match source {
+                Some(ref source) => { //println!("Source display name: {}", source.display_name().unwrap());
 
-            client = coremidi::Client::new("Matriarch Settings Client").unwrap();
+                    client = coremidi::Client::new("Matriarch Settings Client").unwrap();
 
-            let callback = |packet_list: &coremidi::PacketList| {
-                println!("{}", packet_list);
-            };
+                    let callback = |packet_list: &coremidi::PacketList| {
+                        println!("{}", packet_list);
+                    };
 
-            input_port = client.input_port("Matriarch Settings Port", callback);
-            if input_port.is_ok() {
-                input_port.as_ref().unwrap().connect_source(&source.as_ref().unwrap()).unwrap();
+                    input_port = client.input_port("Matriarch Settings Port", callback);
+                    match input_port {
+                        Ok(ref input_port) => {
+                            input_port.connect_source(&source).unwrap();
+                        },
+                        Err(_input_port) => {
+                            println!("input port not created");
+                            std::process::exit(1);
+                        }
+                    }
+                },
+                None => {
+                    println!("source port not created");
+                    std::process::exit(1);
+                }
             }
-            else {
-                println!("input port not created");
-                std::process::exit(1);
-            }
-        }
-        else {
-            println!("source port not created");
+        },
+        None => {
+            println!("source index not set");
             std::process::exit(1);
         }
     }
-    
     application.run();
-    /* 
+    
     //if matriarch_index.is_some() {
     if input_port.is_ok() && source.is_some() {
         input_port.unwrap().disconnect_source(&source.unwrap()).unwrap();
     }
-    */
+    
 }
-
+/*
 fn get_source_index() -> usize {
     let mut args_iter = env::args();
     let tool_name = args_iter
@@ -148,14 +156,12 @@ fn get_source_index() -> usize {
         },
         None => {
             println!("Usage: {} <source-index>", tool_name);
-            println!();
-            println!("Available Sources:");
-            print_sources();
             std::process::exit(-1);
         }
     }
 }
-
+*/
+/* 
 fn print_sources() {
     for (i, source) in coremidi::Sources.into_iter().enumerate() {
         if let Some(display_name) = source.display_name() {
@@ -163,10 +169,10 @@ fn print_sources() {
         }
     }
 }
-
+*/
 fn get_sources() -> Vec<String> {
     let mut v = Vec::new();
-    for (i, source) in coremidi::Sources.into_iter().enumerate() {
+    for (_i, source) in coremidi::Sources.into_iter().enumerate() {
         if let Some(display_name) = source.display_name() {
             v.push(display_name);
             //println!("[{}] {}", i, display_name)
@@ -175,7 +181,3 @@ fn get_sources() -> Vec<String> {
     v
 }
 
-fn demo<T, const N: usize>(v: Vec<T>) -> [T; N] {
-    v.try_into()
-        .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
-}
