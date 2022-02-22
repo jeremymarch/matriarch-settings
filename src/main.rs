@@ -20,7 +20,6 @@ fn main() {
     if v.len() > 0 {
         for (idx, i) in v.iter().enumerate() {
             if i == "Moog Matriarch" {
-                println!("here");
                 matriarch_index = Some(idx);
             }
         }
@@ -80,33 +79,46 @@ fn main() {
         window.show();
     });
     
-    //if matriarch_index.is_some() {
+
+    let source;
+    let input_port;
+    let client;
+    if matriarch_index.is_some() {
         let source_index = matriarch_index.unwrap();
-        println!("Source index: {}", source_index);
+        //println!("Source index: {}", source_index);
 
-        let source = coremidi::Source::from_index(source_index).unwrap();
-        println!("Source display name: {}", source.display_name().unwrap());
+        source = coremidi::Source::from_index(source_index);
+        if source.is_some() {
+            //println!("Source display name: {}", source.display_name().unwrap());
 
-        let client = coremidi::Client::new("Example Client").unwrap();
+            client = coremidi::Client::new("Matriarch Settings Client").unwrap();
 
-        let callback = |packet_list: &coremidi::PacketList| {
-            println!("{}", packet_list);
-        };
+            let callback = |packet_list: &coremidi::PacketList| {
+                println!("{}", packet_list);
+            };
 
-        let input_port = client.input_port("Example Port", callback).unwrap();
-        input_port.connect_source(&source).unwrap();
-    //}
+            input_port = client.input_port("Matriarch Settings Port", callback);
+            if input_port.is_ok() {
+                input_port.as_ref().unwrap().connect_source(&source.as_ref().unwrap()).unwrap();
+            }
+            else {
+                println!("input port not created");
+                std::process::exit(1);
+            }
+        }
+        else {
+            println!("source port not created");
+            std::process::exit(1);
+        }
+    }
     
-/* 
-    let mut input_line = String::new();
-    println!("Press Enter to Finish");
-    std::io::stdin()
-        .read_line(&mut input_line)
-        .expect("Failed to read line");
-*/
     application.run();
-
-    //input_port.disconnect_source(&source).unwrap();
+    /* 
+    //if matriarch_index.is_some() {
+    if input_port.is_ok() && source.is_some() {
+        input_port.unwrap().disconnect_source(&source.unwrap()).unwrap();
+    }
+    */
 }
 
 fn get_source_index() -> usize {
