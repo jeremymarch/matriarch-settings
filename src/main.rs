@@ -6,7 +6,7 @@
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow };
-use coremidi;
+use coremidi; //or https://github.com/Boddlnagg/midir
 //use std::env;
 
 fn main() {
@@ -90,7 +90,8 @@ fn main() {
 
             source = coremidi::Source::from_index(matriarch_index);
             match source {
-                Some(ref source) => { //println!("Source display name: {}", source.display_name().unwrap());
+                Some(ref source) => { 
+                    //println!("Source display name: {}", source.display_name().unwrap());
 
                     client = coremidi::Client::new("Matriarch Settings Client").unwrap();
 
@@ -117,12 +118,12 @@ fn main() {
         },
         None => {
             println!("source index not set");
-            std::process::exit(1);
+            input_port = Err(0);
+            source = None;
         }
     }
     application.run();
     
-    //if matriarch_index.is_some() {
     if input_port.is_ok() && source.is_some() {
         input_port.unwrap().disconnect_source(&source.unwrap()).unwrap();
     }
