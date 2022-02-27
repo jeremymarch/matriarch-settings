@@ -7,16 +7,19 @@
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow };
 use gtk::TreeView;
+//use gtk::ListView;
 use gtk::ListStore;
 use gtk::TreeViewColumn;
 use gtk::glib;
+
 
 //#[derive(Debug, Clone)]
 struct MatriarchParam {
     id:u32,
     name:String,
     value:String,
-    options:Vec<String>
+    options:Vec<String>,
+    default_value:String
 }
 
 use coremidi; //or https://github.com/Boddlnagg/midir
@@ -28,8 +31,8 @@ fn main() {
         .build();
 
     let mut params = [
-        MatriarchParam {id:0, name:"Unit ID".to_string(), value:"".to_string(), options:vec!["test1".to_string(), "test2".to_string()]},
-        MatriarchParam {id:1, name:"Tuning Scale".to_string(), value:"".to_string(), options:vec!["test3".to_string(), "test4".to_string()]},
+        MatriarchParam {id:0, name:"Unit ID".to_string(), value:"".to_string(), options:vec!["1".to_string(), "2".to_string()], default_value:"".to_string()},
+        MatriarchParam {id:1, name:"Tuning Scale".to_string(), value:"".to_string(), options:vec!["3".to_string(), "4".to_string()], default_value:"".to_string()},
         /* 
         MatriarchParam {id:2, name:"Knob Mode".to_string(), value:"".to_string()},
         MatriarchParam {id:3, name:"Note Priority".to_string(), value:"".to_string()},
@@ -134,9 +137,6 @@ fn main() {
             eprintln!("Connect clicked!");
         });
 
-
-        
-       
         let combo = gtk::ComboBoxText::new();
         if v.len() == 0 {
             combo.append_text("No midi devices connected");
@@ -148,35 +148,23 @@ fn main() {
         }
         combo.set_active(Some(0));
 
-/*  
-        let view_list = gtk::ListBox::new();
-        for number in 0..=74 {
-            let label = gtk::Label::new(Some(&number.to_string()));
-            view_list.append(&label);
-        }
-*/
-
+        // change to list?
         let view_list = TreeView::new();
         {
-            //let combo_model = ListStore::new(&[gtk::glib::Type::U32, gtk::glib::Type::STRING]);
-            //let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
-            //model_for_combo.insert_with_values(None, &[(0,&"test".to_string())]);
-
             let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
             let model_list_of_data = ListStore::new(types_inside_columns);
-            /*for liczba in 0..10 {
-                //let array_of_data = &[(0, 2), (1, 3)];
-                model_list_of_data.insert_with_values(None, &[(0, &2), (1, &"blah")]);
-            }*/
 
             for p in &params {
                 let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
                 for o in &p.options {
-                    model_for_combo.insert_with_values(None, &[(0,&o)]);
+                    model_for_combo.insert_with_values(None, &[(0, &o)]);
                 }
                 model_list_of_data.insert_with_values(None, &[(0, &p.id), (1, &p.name), (2, &model_for_combo)]);
             }
+
             view_list.set_model(Some(&model_list_of_data));
+
+            // first column
             let object_to_render_cells: gtk::CellRendererText = gtk::CellRendererText::new();
             object_to_render_cells.set_visible(true);
             let view_column = TreeViewColumn::new();
@@ -186,6 +174,7 @@ fn main() {
             view_column.pack_start(&object_to_render_cells, true);
             view_column.add_attribute(&object_to_render_cells, "text", 0);
             view_list.append_column(&view_column);
+
             // second column
             let object_to_render_cells_2: gtk::CellRendererText = gtk::CellRendererText::new();
             object_to_render_cells_2.set_visible(true);
@@ -232,15 +221,9 @@ fn main() {
 
             view_list.append_column(&view_column_3);
         }
+
         view_list.expand_all();
 
-/* 
-        let model = gio::ListStore::new(gio::AppInfo::static_type());
-        gio::AppInfo::all().iter().for_each(|app_info| {
-            model.append(app_info);
-        });
-        let view_list = gtk::ListView::new(Some(&model),None);
-*/
         let scrolled_window = gtk::ScrolledWindow::builder()
             .hscrollbar_policy(gtk::PolicyType::Never) // Disable horizontal scrolling
             .min_content_width(360)
