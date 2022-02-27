@@ -204,13 +204,15 @@ fn main() {
             object_to_render_cells_3.set_has_entry(false);
 
             //***JWM set column 3 of list model to selected value from combo
-            object_to_render_cells_3.connect_changed(gtk::glib::clone!(@weak model_list_of_data/* , @weak view_list */ => move |cell, listpath, comboiter| { 
-                //let listmodel = view_list.model().unwrap();
-                let listiter = model_list_of_data.iter(&listpath).unwrap();
-                let combomodel = model_list_of_data.get_value(&listiter, 2).get::<ListStore>().unwrap();
-                let selected_combo_value = combomodel.get_value(&comboiter, 0).get::<String>().unwrap();
-                model_list_of_data.set_value(&listiter, 3, &selected_combo_value.to_value() ); 
-            } ));
+            object_to_render_cells_3.connect_changed( gtk::glib::clone!(@weak model_list_of_data => move |_cell, list_path, combo_selected_iter| { 
+                if let Some(list_iter) = model_list_of_data.iter(&list_path) {
+                    if let Ok(combo_model) = model_list_of_data.get_value(&list_iter, 2).get::<ListStore>() {
+                        if let Ok(combo_selected_value) = combo_model.get_value(&combo_selected_iter, 0).get::<String>() {
+                            model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
+                        }
+                    }
+                }
+            } ) );
             // use the combo model for the options
             //object_to_render_cells_3.set_model(Some(&model_for_combo));
             // display the options of the first column in the combo model
