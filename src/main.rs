@@ -9,8 +9,6 @@ use gtk::{Application, ApplicationWindow };
 use gtk::TreeView;
 use gtk::ListStore;
 use gtk::TreeViewColumn;
-use gtk::glib::{ToValue, Type, Value};
-use gtk::gio;
 
 //#[derive(Debug, Clone)]
 struct MatriarchParam {
@@ -156,15 +154,23 @@ fn main() {
 
         let view_list = TreeView::new();
         {
-            let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING];
+            //let combo_model = ListStore::new(&[gtk::glib::Type::U32, gtk::glib::Type::STRING]);
+            //let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
+            //model_for_combo.insert_with_values(None, &[(0,&"test".to_string())]);
+
+            let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type()];
             let model_list_of_data = ListStore::new(types_inside_columns);
             /*for liczba in 0..10 {
                 //let array_of_data = &[(0, 2), (1, 3)];
                 model_list_of_data.insert_with_values(None, &[(0, &2), (1, &"blah")]);
             }*/
+            let mut i = 0;
             for p in &params {
                 //let array_of_data = &[(0, 2), (1, 3)];
-                model_list_of_data.insert_with_values(None, &[(0, &p.id), (1, &p.name)]);
+                let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
+                model_for_combo.insert_with_values(None, &[(0,&i.to_string())]);
+                i += 2;
+                model_list_of_data.insert_with_values(None, &[(0, &p.id), (1, &p.name),(2, &model_for_combo)]);
             }
             view_list.set_model(Some(&model_list_of_data));
             let object_to_render_cells: gtk::CellRendererText = gtk::CellRendererText::new();
@@ -186,6 +192,23 @@ fn main() {
             view_column_2.pack_start(&object_to_render_cells, true);
             view_column_2.add_attribute(&object_to_render_cells, "text", 1);
             view_list.append_column(&view_column_2);
+
+            // third column
+            let object_to_render_cells_3: gtk::CellRendererCombo = gtk::CellRendererCombo::new();
+            object_to_render_cells_3.set_visible(true);
+            object_to_render_cells_3.set_editable(true);
+            // use the combo model for the options
+            //object_to_render_cells_3.set_model(Some(&model_for_combo));
+            // display the options of the first column in the combo model
+            object_to_render_cells_3.set_text_column(0);
+            let view_column_3 = TreeViewColumn::new();
+            view_column_3.set_expand(true);
+            view_column_3.set_visible(true);
+            view_column_3.set_title("Value");
+            view_column_3.pack_start(&object_to_render_cells_3, false);
+            // the data for each row is in the second column in the tree model
+            view_column_3.add_attribute(&object_to_render_cells_3, "model", 2);
+            view_list.append_column(&view_column_3);
         }
         view_list.expand_all();
 
