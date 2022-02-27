@@ -6,6 +6,12 @@
 
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow };
+use gtk::TreeView;
+use gtk::ListStore;
+use gtk::TreeViewColumn;
+use gtk::glib::{ToValue, Type, Value};
+use gtk::gio;
+
 use coremidi; //or https://github.com/Boddlnagg/midir
 //use std::env;
 
@@ -51,18 +57,57 @@ fn main() {
         }
         combo.set_active(Some(0));
 
-        
-        let list_box = gtk::ListBox::new();
+/*  
+        let view_list = gtk::ListBox::new();
         for number in 0..=74 {
             let label = gtk::Label::new(Some(&number.to_string()));
-            list_box.append(&label);
+            view_list.append(&label);
         }
+*/
 
+        let view_list = TreeView::new();
+        {
+            let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING];
+            let model_list_of_data = ListStore::new(types_inside_columns);
+            for liczba in 0..10 {
+                //let array_of_data = &[(0, 2), (1, 3)];
+                model_list_of_data.insert_with_values(None, &[(0, &2), (1, &"blah")]);
+            }
+            view_list.set_model(Some(&model_list_of_data));
+            let object_to_render_cells: gtk::CellRendererText = gtk::CellRendererText::new();
+            object_to_render_cells.set_visible(true);
+            let view_column = TreeViewColumn::new();
+            view_column.set_expand(true);
+            view_column.set_visible(true);
+            view_column.set_title("u32");
+            view_column.pack_start(&object_to_render_cells, true);
+            view_column.add_attribute(&object_to_render_cells, "text", 0);
+            view_list.append_column(&view_column);
+            // second column
+            let object_to_render_cells_2: gtk::CellRendererText = gtk::CellRendererText::new();
+            object_to_render_cells_2.set_visible(true);
+            let view_column_2 = TreeViewColumn::new();
+            view_column_2.set_expand(true);
+            view_column_2.set_visible(true);
+            view_column_2.set_title("f64");
+            view_column_2.pack_start(&object_to_render_cells, true);
+            view_column_2.add_attribute(&object_to_render_cells, "text", 1);
+            view_list.append_column(&view_column_2);
+        }
+        view_list.expand_all();
+
+/* 
+        let model = gio::ListStore::new(gio::AppInfo::static_type());
+        gio::AppInfo::all().iter().for_each(|app_info| {
+            model.append(app_info);
+        });
+        let view_list = gtk::ListView::new(Some(&model),None);
+*/
         let scrolled_window = gtk::ScrolledWindow::builder()
             .hscrollbar_policy(gtk::PolicyType::Never) // Disable horizontal scrolling
             .min_content_width(360)
             .vexpand(true)
-            .child(&list_box)
+            .child(&view_list)
             .build();
 
             let hbox: gtk::Box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
