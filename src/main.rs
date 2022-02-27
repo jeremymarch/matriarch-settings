@@ -15,6 +15,7 @@ struct MatriarchParam {
     id:u32,
     name:String,
     value:String,
+    options:Vec<String>
 }
 
 use coremidi; //or https://github.com/Boddlnagg/midir
@@ -26,8 +27,9 @@ fn main() {
         .build();
 
     let mut params = [
-        MatriarchParam {id:0, name:"Unit ID".to_string(), value:"".to_string()},
-        MatriarchParam {id:1, name:"Tuning Scale".to_string(), value:"".to_string()},
+        MatriarchParam {id:0, name:"Unit ID".to_string(), value:"".to_string(), options:vec!["test1".to_string(), "test2".to_string()]},
+        MatriarchParam {id:1, name:"Tuning Scale".to_string(), value:"".to_string(), options:vec!["test3".to_string(), "test4".to_string()]},
+        /* 
         MatriarchParam {id:2, name:"Knob Mode".to_string(), value:"".to_string()},
         MatriarchParam {id:3, name:"Note Priority".to_string(), value:"".to_string()},
         MatriarchParam {id:4, name:"Transmit Program Change".to_string(), value:"".to_string()},
@@ -105,6 +107,7 @@ fn main() {
         MatriarchParam {id:72, name:"Arp/Seq Random Repeats".to_string(), value:"".to_string()},
         MatriarchParam {id:73, name:"ARP/SEQ CV OUT Mirrors KB CV".to_string(), value:"".to_string()},
         MatriarchParam {id:74, name:"KB CV OUT Mirrors ARP/SEQ CV".to_string(), value:"".to_string()},
+        */
     ];
     
 
@@ -164,13 +167,13 @@ fn main() {
                 //let array_of_data = &[(0, 2), (1, 3)];
                 model_list_of_data.insert_with_values(None, &[(0, &2), (1, &"blah")]);
             }*/
-            let mut i = 0;
+
             for p in &params {
-                //let array_of_data = &[(0, 2), (1, 3)];
                 let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
-                model_for_combo.insert_with_values(None, &[(0,&i.to_string())]);
-                i += 2;
-                model_list_of_data.insert_with_values(None, &[(0, &p.id), (1, &p.name),(2, &model_for_combo)]);
+                for o in &p.options {
+                    model_for_combo.insert_with_values(None, &[(0,&o)]);
+                }
+                model_list_of_data.insert_with_values(None, &[(0, &p.id), (1, &p.name), (2, &model_for_combo)]);
             }
             view_list.set_model(Some(&model_list_of_data));
             let object_to_render_cells: gtk::CellRendererText = gtk::CellRendererText::new();
@@ -205,7 +208,7 @@ fn main() {
             view_column_3.set_expand(true);
             view_column_3.set_visible(true);
             view_column_3.set_title("Value");
-            view_column_3.pack_start(&object_to_render_cells_3, false);
+            view_column_3.pack_start(&object_to_render_cells_3, true);
             // the data for each row is in the second column in the tree model
             view_column_3.add_attribute(&object_to_render_cells_3, "model", 2);
             view_list.append_column(&view_column_3);
