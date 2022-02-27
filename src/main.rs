@@ -9,6 +9,7 @@ use gtk::{Application, ApplicationWindow };
 use gtk::TreeView;
 use gtk::ListStore;
 use gtk::TreeViewColumn;
+use gtk::glib;
 
 //#[derive(Debug, Clone)]
 struct MatriarchParam {
@@ -161,7 +162,7 @@ fn main() {
             //let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
             //model_for_combo.insert_with_values(None, &[(0,&"test".to_string())]);
 
-            let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type()];
+            let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
             let model_list_of_data = ListStore::new(types_inside_columns);
             /*for liczba in 0..10 {
                 //let array_of_data = &[(0, 2), (1, 3)];
@@ -200,17 +201,32 @@ fn main() {
             let object_to_render_cells_3: gtk::CellRendererCombo = gtk::CellRendererCombo::new();
             object_to_render_cells_3.set_visible(true);
             object_to_render_cells_3.set_editable(true);
+            object_to_render_cells_3.set_has_entry(false);
+
+            //***JWM set column 3 of list model to selected value from combo
+            object_to_render_cells_3.connect_changed(gtk::glib::clone!(@weak model_list_of_data/* , @weak view_list */ => move |cell, listpath, comboiter| { 
+                //let listmodel = view_list.model().unwrap();
+                let listiter = model_list_of_data.iter(&listpath).unwrap();
+                let combomodel = model_list_of_data.get_value(&listiter, 2).get::<ListStore>().unwrap();
+                let selected_combo_value = combomodel.get_value(&comboiter, 0).get::<String>().unwrap();
+                model_list_of_data.set_value(&listiter, 3, &selected_combo_value.to_value() ); 
+            } ));
             // use the combo model for the options
             //object_to_render_cells_3.set_model(Some(&model_for_combo));
             // display the options of the first column in the combo model
             object_to_render_cells_3.set_text_column(0);
+
             let view_column_3 = TreeViewColumn::new();
             view_column_3.set_expand(true);
             view_column_3.set_visible(true);
             view_column_3.set_title("Value");
             view_column_3.pack_start(&object_to_render_cells_3, true);
+
+            //***JWM set model and text for where to get the selected value (column 3)
             // the data for each row is in the second column in the tree model
             view_column_3.add_attribute(&object_to_render_cells_3, "model", 2);
+            view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); //set selected value here in "changed" signal to display it
+
             view_list.append_column(&view_column_3);
         }
         view_list.expand_all();
