@@ -203,8 +203,8 @@ fn main() {
             object_to_render_cells_3.set_editable(true);
             object_to_render_cells_3.set_has_entry(false);
 
-            //***JWM set column 3 of list model to selected value from combo
-            object_to_render_cells_3.connect_changed( gtk::glib::clone!(@weak model_list_of_data => move |_cell, list_path, combo_selected_iter| { 
+            // set column 3 of list model to selected value from combo so that it will be displayed once selected
+            object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data => move |_cell, list_path, combo_selected_iter| { 
                 if let Some(list_iter) = model_list_of_data.iter(&list_path) {
                     if let Ok(combo_model) = model_list_of_data.get_value(&list_iter, 2).get::<ListStore>() {
                         if let Ok(combo_selected_value) = combo_model.get_value(&combo_selected_iter, 0).get::<String>() {
@@ -214,7 +214,7 @@ fn main() {
                 }
             } ) );
             // use the combo model for the options
-            //object_to_render_cells_3.set_model(Some(&model_for_combo));
+            // object_to_render_cells_3.set_model(Some(&model_for_combo)); //only set model here if same model for each row
             // display the options of the first column in the combo model
             object_to_render_cells_3.set_text_column(0);
 
@@ -224,10 +224,11 @@ fn main() {
             view_column_3.set_title("Value");
             view_column_3.pack_start(&object_to_render_cells_3, true);
 
-            //***JWM set model and text for where to get the selected value (column 3)
-            // the data for each row is in the second column in the tree model
+            // set model and text for where to get the selected value (column 3)
+            // the combo data for each row is in the second column in the tree model
             view_column_3.add_attribute(&object_to_render_cells_3, "model", 2);
-            view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); //set selected value here in "changed" signal to display it
+            // set selected value here in "changed" signal to display it
+            view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); 
 
             view_list.append_column(&view_column_3);
         }
