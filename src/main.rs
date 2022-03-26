@@ -27,19 +27,17 @@ trait GenericOptions
    fn get_options(&self) -> Vec<String>;
 }
 
-impl GenericOptions for RangeOptions
+impl GenericOptions for ListOptions
 {
-   fn get_options(&self) -> Vec<String>
-   {
-       vec![self.min.to_string(), self.max.to_string()]
+   fn get_options(&self) -> Vec<String> {
+      self.options.to_owned()
    }
 }
 
-impl GenericOptions for ListOptions
+impl GenericOptions for RangeOptions
 {
-   fn get_options(&self) -> Vec<String>
-   {
-      self.options.to_owned()
+   fn get_options(&self) -> Vec<String> {
+       vec![self.min.to_string(), self.max.to_string()]
    }
 }
 
@@ -49,7 +47,7 @@ struct MatriarchParam<T: GenericOptions> {
     name:String,
     value:String,
     options:T,
-    default_value:String
+    default_value:String,
 }
 
 use coremidi; //or https://github.com/Boddlnagg/midir
@@ -60,9 +58,32 @@ fn main() {
         .application_id("com.philolog.matriarch-settings")
         .build();
 
-    let mut params = [
-        MatriarchParam {id:0, name:"Unit ID".to_string(), value:"".to_string(), options:ListOptions {options:vec!["1".to_string(), "2".to_string()]}, default_value:"0 (Default)".to_string()},
-        MatriarchParam {id:1, name:"Tuning Scale".to_string(), value:"".to_string(), options:ListOptions {options:vec!["3".to_string(), "4".to_string()]}, default_value:"0 (Default - 12-TET)".to_string()},
+    //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
+    let mut params:[Box<MatriarchParam<T: GenericOptions>>] = [
+        Box::new(MatriarchParam {id:0, 
+            name:"Unit ID".to_string(), 
+            value:"".to_string(), 
+            options: ListOptions {options:vec!["1".to_string(), "2".to_string()]}, 
+            default_value:"0 (Default)".to_string()}),
+
+        Box::new(MatriarchParam {id:1, 
+            name:"Tuning Scale".to_string(), 
+            value:"".to_string(), 
+            options: ListOptions {options:vec!["3".to_string(), "4".to_string()]}, 
+            default_value:"0 (Default - 12-TET)".to_string()}),
+
+        Box::new(MatriarchParam {id:3, 
+            name:"Unit ID".to_string(), 
+            value:"".to_string(), 
+            options: RangeOptions {min:0,max:15}, 
+            default_value:"0 (Default)".to_string()}),
+
+        Box::new(MatriarchParam {id:4, 
+            name:"Tuning Scale".to_string(), 
+            value:"".to_string(), 
+            options: RangeOptions {min:0,max:31}, 
+            default_value:"0 (Default - 12-TET)".to_string()})
+
         /* 
         MatriarchParam {id:2, name:"Knob Mode".to_string(), value:"".to_string()},
         MatriarchParam {id:3, name:"Note Priority".to_string(), value:"".to_string()},
