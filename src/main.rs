@@ -12,42 +12,58 @@ use gtk::ListStore;
 use gtk::TreeViewColumn;
 use gtk::glib;
 
-
-struct ListOptions {
-    options:Vec<String>
-}
-
-struct RangeOptions {
-    min:u32,
-    max:u32,
-}
-
-trait GenericOptions
-{
-   fn get_options(&self) -> Vec<String>;
-}
-
-impl GenericOptions for ListOptions
-{
-   fn get_options(&self) -> Vec<String> {
-      self.options.to_owned()
-   }
-}
-
-impl GenericOptions for RangeOptions
-{
-   fn get_options(&self) -> Vec<String> {
-       vec![self.min.to_string(), self.max.to_string()]
-   }
-}
-
-//#[derive(Debug, Clone)]
-struct MatriarchParam<T: GenericOptions> {
-    id:u32,
-    name:String,
+struct ParamListOption {
+    id: u32,
+    name: String,
     value:String,
-    options:T,
+    options: Vec<String>,
     default_value:String,
+}
+
+struct ParamRangeOption {
+    id: u32,
+    name: String,
+    value:String,
+    min: u32,
+    max: u32,
+    default_value:String,
+}
+
+trait GenericOptions {
+    fn get_options(&self) -> Vec<String>;
+    fn get_name(&self) -> String;
+    fn get_id(&self) -> u32;
+    fn get_default_value(&self) -> String;
+}
+
+impl GenericOptions for ParamRangeOption {
+    fn get_options(&self) -> Vec<String> {
+        vec![self.min.to_string(), self.max.to_string()]
+    }
+    fn get_name(&self) -> String {
+        self.name.to_owned()
+    }
+    fn get_id(&self) -> u32 {
+        self.id
+    }
+    fn get_default_value(&self) -> String {
+        self.default_value.to_owned()
+    }
+}
+
+impl GenericOptions for ParamListOption {
+    fn get_options(&self) -> Vec<String> {
+        self.options.to_owned()
+    }
+    fn get_name(&self) -> String {
+        self.name.to_owned()
+    }
+    fn get_id(&self) -> u32 {
+        self.id
+    }
+    fn get_default_value(&self) -> String {
+        self.default_value.to_owned()
+    }
 }
 
 use coremidi; //or https://github.com/Boddlnagg/midir
@@ -59,29 +75,20 @@ fn main() {
         .build();
 
     //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
-    let mut params:[Box<MatriarchParam<T: GenericOptions>>] = [
-        Box::new(MatriarchParam {id:0, 
+    let mut params:[Box<dyn GenericOptions>; 2] = [
+        Box::new(ParamListOption {
+            id:0, 
             name:"Unit ID".to_string(), 
             value:"".to_string(), 
-            options: ListOptions {options:vec!["1".to_string(), "2".to_string()]}, 
+            options:vec!["1".to_string(), "2".to_string()], 
             default_value:"0 (Default)".to_string()}),
 
-        Box::new(MatriarchParam {id:1, 
+        Box::new(ParamRangeOption {
+            id:1, 
             name:"Tuning Scale".to_string(), 
             value:"".to_string(), 
-            options: ListOptions {options:vec!["3".to_string(), "4".to_string()]}, 
-            default_value:"0 (Default - 12-TET)".to_string()}),
-
-        Box::new(MatriarchParam {id:3, 
-            name:"Unit ID".to_string(), 
-            value:"".to_string(), 
-            options: RangeOptions {min:0,max:15}, 
-            default_value:"0 (Default)".to_string()}),
-
-        Box::new(MatriarchParam {id:4, 
-            name:"Tuning Scale".to_string(), 
-            value:"".to_string(), 
-            options: RangeOptions {min:0,max:31}, 
+            min: 1,
+            max: 3, 
             default_value:"0 (Default - 12-TET)".to_string()})
 
         /* 
@@ -268,6 +275,7 @@ fn main() {
     */
     
 
+
     let mut matriarch_index:Option<usize> = None;
     let v = get_sources();
     if v.len() > 0 {
@@ -309,10 +317,10 @@ fn main() {
 
             for p in &params {
                 let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
-                for o in &p.options.get_options() {
+                for o in &p.get_options() {
                     model_for_combo.insert_with_values(None, &[(0, &o)]);
                 }
-                model_list_of_data.insert_with_values(None, &[(0, &p.id), (1, &p.name), (2, &model_for_combo), (3, &p.default_value)]);
+                model_list_of_data.insert_with_values(None, &[(0, &p.get_id()), (1, &p.get_name()), (2, &model_for_combo), (3, &p.get_default_value())]);
             }
 
             view_list.set_model(Some(&model_list_of_data));
