@@ -81,7 +81,7 @@ fn main() {
         .build();
 
     //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
-    let mut params:[Box<dyn GenericOptions>; 12] = [
+    let mut params:[Box<dyn GenericOptions>; 23] = [
         Box::new(ParamRangeOption {
             id:0, 
             name:"Unit ID".to_string(), 
@@ -171,23 +171,85 @@ fn main() {
             max:16,
             default_value:"0".to_string(),
             note: "".to_string()}),
-
-
+        Box::new(ParamListOption {
+            id:12, 
+            name:"MIDI Out Filter - Keys".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"1".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:13, 
+            name:"MIDI Out Filter - Wheels".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"1".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:14, 
+            name:"MIDI Out Filter - Panel".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"1".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:15, 
+            name:"Output 14-bit MIDI CCs".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"0".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:16, 
+            name:"Local Control: Keys".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"1".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:17, 
+            name:"Local Control: Wheels".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"1".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:18, 
+            name:"Local Control: Panel".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"0".to_string(),
+            note: "Actual default different to documented".to_string()}),
+        Box::new(ParamListOption {
+            id:19, 
+            name:"Local Control: Arp/Seq".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"1".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:20, 
+            name:"Sequence Transpose Mode".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Relative to First Note".to_string(), "Relative to Middle C".to_string()],
+            default_value:"0".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:21, 
+            name:"Arp/Seq Keyed Timing Reset".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_value:"1".to_string(),
+            note: "Actual default different to documented".to_string()}),
+        Box::new(ParamListOption {
+            id:22, 
+            name:"Arp FW/BW Repeats".to_string(), 
+            value:"".to_string(), 
+            options:vec!["Don't Repeat end notes".to_string(), "Repeat end notes".to_string()],
+            default_value:"1".to_string(),
+            note: "".to_string()}),
 
                 /*
-    new Param(12, "MIDI Out Filter - Keys", Options(["Off", "On"], 1)),
-    new Param(13, "MIDI Out Filter - Wheels", Options(["Off", "On"], 1)),
-    new Param(14, "MIDI Out Filter - Panel", Options(["Off", "On"], 1)),
-    new Param(15, "Output 14-bit MIDI CCs", Options(["Off", "On"], 0)),
-    new Param(16, "Local Control: Keys", Options(["Off", "On"], 1)),
-    new Param(17, "Local Control: Wheels", Options(["Off", "On"], 1)),
-    new Param(18, "Local Control: Panel", Options(["Off", "On"], 0), "Actual default different to documented"),
-    new Param(19, "Local Control: Arp/Seq", Options(["Off", "On"], 1)),
-    new Param(20, "Sequence Transpose Mode",
-        Options(["Relative to First Note", "Relative to Middle C"], 0)),
-    new Param(21, "Arp/Seq Keyed Timing Reset", Options(["Off", "On"], 1), "Actual default different to documented"),
-    new Param(22, "Arp FW/BW Repeats",
-        Options(["Don"t Repeat end notes", "Repeat end notes"], 1)),
     new Param(23, "Arp/Seq Swing", Slider(0, 16383, 8192)),
     new Param(24, "Sequence Keyboard Control", Options(["Off", "On"], 1)),
     new Param(25, "Delay Sequence Change", Options(["Off", "On"], 0)),
