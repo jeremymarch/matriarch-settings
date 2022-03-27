@@ -4,6 +4,9 @@
 //https://github.com/gtk-rs/examples/blob/master/src/bin/listbox_model.rs
 //https://users.rust-lang.org/t/how-to-right-justify-numeric-data-in-gtk-rs-list-store/30538
 
+//scrolling on combobox
+//https://mail.gnome.org/archives/gtk-list/2016-December/msg00035.html
+
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow };
 use gtk::TreeView;
@@ -20,7 +23,8 @@ struct ParamListOption {
     name: String,
     value:String,
     options: Vec<String>,
-    default_value:String,
+    default_value:usize,
+    default_mesg:String,
     note:String,
 }
 
@@ -30,7 +34,8 @@ struct ParamRangeOption {
     value:String,
     min: u32,
     max: u32,
-    default_value:String,
+    default_value:usize,
+    default_mesg:String,
     note:String,
 }
 
@@ -38,14 +43,19 @@ trait GenericOptions {
     fn get_options(&self) -> Vec<String>;
     fn get_name(&self) -> String;
     fn get_id(&self) -> u32;
-    fn get_default_value(&self) -> String;
+    fn get_default_value(&self) -> usize;
 }
 
 impl GenericOptions for ParamRangeOption {
     fn get_options(&self) -> Vec<String> {
         let mut v = Vec::new();
         for i in self.min..=self.max {
-            v.push(i.to_string())
+            if i == self.default_value as u32 {
+                v.push(format!("{} (Default{})", i, self.default_mesg));
+            }
+            else {
+                v.push(i.to_string());
+            }
         }
         v
     }
@@ -55,14 +65,15 @@ impl GenericOptions for ParamRangeOption {
     fn get_id(&self) -> u32 {
         self.id
     }
-    fn get_default_value(&self) -> String {
-        self.default_value.to_owned()
+    fn get_default_value(&self) -> usize {
+        self.default_value
     }
 }
-
+use std::str::FromStr;
 impl GenericOptions for ParamListOption {
     fn get_options(&self) -> Vec<String> {
-        self.options.to_owned()
+        let a = self.options.to_owned();
+        a.into_iter().enumerate().map(|(i, mut r)| { if i == self.default_value { format!("{} (Default{})", r, self.default_mesg) } else { r.to_owned() } }).collect::<Vec<String>>()
     }
     fn get_name(&self) -> String {
         self.name.to_owned()
@@ -70,8 +81,8 @@ impl GenericOptions for ParamListOption {
     fn get_id(&self) -> u32 {
         self.id
     }
-    fn get_default_value(&self) -> String {
-        self.default_value.to_owned()
+    fn get_default_value(&self) -> usize {
+        self.default_value
     }
 }
 
@@ -92,10 +103,10 @@ fn main() {
             id:0, 
             name:"Unit ID".to_string(), 
             value:"".to_string(), 
-            //options:vec!["1".to_string(), "2".to_string()], 
             min:0,
             max:15,
-            default_value:"0 (Default)".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note:"".to_string()}),
         Box::new(ParamRangeOption {
             id:1, 
@@ -103,63 +114,72 @@ fn main() {
             value:"".to_string(), 
             min: 0,
             max: 31, 
-            default_value:"0 (Default - 12-TET)".to_string(),
+            default_value:0,
+            default_mesg: " - 12-TET".to_string(),
             note:"".to_string()}),
         Box::new(ParamListOption {
             id:2, 
             name:"Knob Mode".to_string(), 
             value:"".to_string(), 
             options:vec!["Snap".to_string(), "Pass-Thru".to_string(), "Relative".to_string()],
-            default_value:"0 (Default - 12-TET)".to_string(),
+            default_value:0,
+            default_mesg: " - blah".to_string(),
             note: "Actual default different to documented".to_string()}),
         Box::new(ParamListOption {
             id:3, 
             name:"Note Priority".to_string(), 
             value:"".to_string(), 
             options:vec!["Low".to_string(), "High".to_string(), "Last Note".to_string()],
-            default_value:"2".to_string(),
+            default_value:2,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:4, 
             name:"Transmit Program Change".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"0".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:5, 
             name:"Receive Program Change".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:6, 
             name:"MIDI Input Ports".to_string(), 
             value:"".to_string(), 
             options:vec!["none".to_string(), "DIN only".to_string(), "USB only".to_string(), "Both DIN and USB".to_string()],
-            default_value:"3".to_string(),
+            default_value:3,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:7, 
             name:"MIDI Output Ports".to_string(), 
             value:"".to_string(), 
             options:vec!["none".to_string(), "DIN only".to_string(), "USB only".to_string(), "Both DIN and USB".to_string()],
-            default_value:"3".to_string(),
+            default_value:3,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:8, 
             name:"MIDI Echo USB In".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "Echo USB In to DIN Out".to_string(), "Echo USB In to USB Out".to_string(), "Echo DIN In to Both DIN and USB Out".to_string()],
-            default_value:"0".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:9, 
             name:"MIDI Echo DIN In".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "Echo DIN In to DIN Out".to_string(), "Echo DIN In to USB Out".to_string(), "Echo DIN In to Both DIN and USB Out".to_string()],
-            default_value:"0".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamRangeOption {
             id:10, 
@@ -167,7 +187,8 @@ fn main() {
             value:"".to_string(), 
             min:1,
             max:16,
-            default_value:"0".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamRangeOption {
             id:11, 
@@ -175,84 +196,96 @@ fn main() {
             value:"".to_string(), 
             min:1,
             max:16,
-            default_value:"0".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:12, 
             name:"MIDI Out Filter - Keys".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:13, 
             name:"MIDI Out Filter - Wheels".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:14, 
             name:"MIDI Out Filter - Panel".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:15, 
             name:"Output 14-bit MIDI CCs".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"0".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:16, 
             name:"Local Control: Keys".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:17, 
             name:"Local Control: Wheels".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:18, 
             name:"Local Control: Panel".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"0".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note: "Actual default different to documented".to_string()}),
         Box::new(ParamListOption {
             id:19, 
             name:"Local Control: Arp/Seq".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:20, 
             name:"Sequence Transpose Mode".to_string(), 
             value:"".to_string(), 
             options:vec!["Relative to First Note".to_string(), "Relative to Middle C".to_string()],
-            default_value:"0".to_string(),
+            default_value:0,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:21, 
             name:"Arp/Seq Keyed Timing Reset".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "Actual default different to documented".to_string()}),
         Box::new(ParamListOption {
             id:22, 
             name:"Arp FW/BW Repeats".to_string(), 
             value:"".to_string(), 
             options:vec!["Don't Repeat end notes".to_string(), "Repeat end notes".to_string()],
-            default_value:"1".to_string(),
+            default_value:1,
+            default_mesg: "".to_string(),
             note: "".to_string()}),
 
                 /*
@@ -553,7 +586,7 @@ fn main() {
                 for o in &p.get_options() {
                     model_for_combo.insert_with_values(None, &[(0, &o)]);
                 }
-                model_list_of_data.insert_with_values(None, &[(0, &p.get_id()), (1, &p.get_name()), (2, &model_for_combo), (3, &p.get_default_value())]);
+                model_list_of_data.insert_with_values(None, &[(0, &p.get_id()), (1, &p.get_name()), (2, &model_for_combo), (3, &p.get_options()[p.get_default_value()])]);
             }
 
             view_list.set_model(Some(&model_list_of_data));
