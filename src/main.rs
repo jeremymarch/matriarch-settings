@@ -81,6 +81,7 @@ fn main() {
         .build();
 
     //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
+    //https://github.com/rust-lang/rfcs/pull/2289 is needed to have generic struct member
     let mut params:[Box<dyn GenericOptions>; 23] = [
         Box::new(ParamRangeOption {
             id:0, 
@@ -586,6 +587,11 @@ fn main() {
                     if let Ok(combo_model) = model_list_of_data.get_value(&list_iter, 2).get::<ListStore>() {
                         if let Ok(combo_selected_value) = combo_model.get_value(&combo_selected_iter, 0).get::<String>() {
                             model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
+
+                            let row_index = list_path.indices()[0];
+                            let combo_index = combo_model.path(combo_selected_iter).indices()[0];
+
+                            println!("changed row index: {}, combo index: {}, value: {:?}", row_index, combo_index, &combo_selected_value.to_value());
                         }
                     }
                 }
