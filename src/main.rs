@@ -11,6 +11,9 @@ use gtk::TreeView;
 use gtk::ListStore;
 use gtk::TreeViewColumn;
 use gtk::glib;
+use gtk::CssProvider;
+use gtk::StyleContext;
+use gtk::gdk::Display;
 
 struct ParamListOption {
     id: u32,
@@ -79,6 +82,8 @@ fn main() {
     let application = Application::builder()
         .application_id("com.philolog.matriarch-settings")
         .build();
+
+        application.connect_startup(|_| load_css());
 
     //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
     //https://github.com/rust-lang/rfcs/pull/2289 is needed to have generic struct member
@@ -579,7 +584,7 @@ fn main() {
             let object_to_render_cells_3: gtk::CellRendererCombo = gtk::CellRendererCombo::new();
             object_to_render_cells_3.set_visible(true);
             object_to_render_cells_3.set_editable(true);
-            object_to_render_cells_3.set_has_entry(false);
+            object_to_render_cells_3.set_has_entry(false); //whether it also has a text entry besides the combo options
 
             // set column 3 of list model to selected value from combo so that it will be displayed once selected
             object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data => move |_cell, list_path, combo_selected_iter| { 
@@ -731,6 +736,21 @@ fn print_sources() {
     }
 }
 */
+
+fn load_css() {
+    // Load the CSS file and add it to the provider
+    let provider = CssProvider::new();
+    provider.load_from_path("style.css");//or: /User/jeremy/Documents/code/matriarch-settings/style.css
+    //provider.load_from_data(include_bytes!("style.css"));
+
+    // Add the provider to the default screen
+    StyleContext::add_provider_for_display(
+        &Display::default().expect("Could not connect to a display."),
+        &provider,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+}
+
 fn get_sources() -> Vec<String> {
     let mut v = Vec::new();
     for (_i, source) in coremidi::Sources.into_iter().enumerate() {
@@ -763,6 +783,13 @@ fn read_param(param_id: i32) {
     println!("Sending read request for Parameter {}",  param_id);
     //params_waiting[param_id] = true;
     //midi_out.send(msg);
+}
+
+fn update_cell(param_id:i32, value_index:i32) {
+    //get value from params array
+    //set text column of combocellrenderer
+    //let text_value = params[param_id].get_options()[value_index];
+    //model_list_of_data.set_value(&list_iter, 3, text_value ); 
 }
 
 /* 
