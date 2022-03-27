@@ -588,10 +588,10 @@ fn main() {
                         if let Ok(combo_selected_value) = combo_model.get_value(&combo_selected_iter, 0).get::<String>() {
                             model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
 
-                            let row_index = list_path.indices()[0];
-                            let combo_index = combo_model.path(combo_selected_iter).indices()[0];
+                            let param_id = list_path.indices()[0];
+                            let param_index = combo_model.path(combo_selected_iter).indices()[0];
 
-                            println!("changed row index: {}, combo index: {}, value: {:?}", row_index, combo_index, &combo_selected_value.to_value());
+                            param_changed(param_id, param_index, &combo_selected_value.to_string());
                         }
                     }
                 }
@@ -742,3 +742,42 @@ fn get_sources() -> Vec<String> {
     v
 }
 
+fn param_changed(id: i32, param_index: i32, value: &str) {
+    println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
+    set_param(id, param_index);
+}
+
+fn set_param(param_id: i32, value: i32) {
+    let mut msb = 0;
+    let mut lsb = value;
+    if value > 128 { 
+        //msb = parseInt(value / 128); 
+        lsb = value % 128; 
+    }
+    let msg:Vec<i32> = vec![0xf0, 0x04, 0x17, 0x23, param_id, msb, lsb, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+    //midi_out.send(msg);
+}
+
+fn read_param(param_id: i32) {
+    let msg:Vec<i32> = vec![0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+    println!("Sending read request for Parameter {}",  param_id);
+    //params_waiting[param_id] = true;
+    //midi_out.send(msg);
+}
+
+/* 
+function set_param(param_id, value) {
+    let msb = 0;
+    let lsb = value;
+    if(value > 128) { msb = parseInt(value / 128); lsb = value % 128; }
+    let msg = [0xf0, 0x04, 0x17, 0x23, param_id, msb, lsb, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7]
+    midi_out.send(msg);
+}
+
+function read_param(param_id) {
+    let msg = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7]
+    console.log('Sending read request for Parameter ' + param_id);
+    params_waiting[param_id] = true;
+    midi_out.send(msg);
+}
+*/
