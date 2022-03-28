@@ -677,7 +677,7 @@ fn main() {
             .child(&view_list)
             .build();
 
-            let hbox: gtk::Box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+            let hbox: gtk::Box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
             hbox.set_homogeneous(true);
             hbox.prepend(&button);
             hbox.append(&combo);
