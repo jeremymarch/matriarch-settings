@@ -8,3 +8,7 @@ authors = ["Jeremy March <jmarch@gradcenter.cuny.edu>"]
 gtk = { version = "0.4.6", package = "gtk4" }
 coremidi = "0.6.0" # https://github.com/chris-zen/coremidi
 midir = "0.7.0" # https://github.com/Boddlnagg/midir
+
+[dependencies.adw]
+package = "libadwaita"
+version = "0.1.1"

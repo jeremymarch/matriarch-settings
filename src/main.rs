@@ -8,7 +8,7 @@
 //https://mail.gnome.org/archives/gtk-list/2016-December/msg00035.html
 
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow };
+use gtk::{Application};
 use gtk::TreeView;
 //use gtk::ListView;
 use gtk::ListStore;
@@ -17,6 +17,9 @@ use gtk::glib;
 use gtk::CssProvider;
 use gtk::StyleContext;
 use gtk::gdk::Display;
+use adw::prelude::*;
+
+use adw::{ActionRow, ApplicationWindow, HeaderBar};
 
 struct ParamListOption {
     id: u32,
@@ -77,7 +80,7 @@ impl GenericOptions for ParamRangeOption {
 impl GenericOptions for ParamListOption {
     fn get_options(&self) -> Vec<String> {
         let a = self.options.to_owned();
-        a.into_iter().enumerate().map(|(idx, mut r)| { if idx == self.default_index { format!("{} (Default{})", r, self.default_mesg) } else { r.to_owned() } }).collect::<Vec<String>>()
+        a.into_iter().enumerate().map(|(idx, r)| { if idx == self.default_index { format!("{} (Default{})", r, self.default_mesg) } else { r.to_owned() } }).collect::<Vec<String>>()
     }
     fn get_name(&self) -> String {
         self.name.to_owned()
@@ -98,7 +101,12 @@ fn main() {
         .application_id("com.philolog.matriarch-settings")
         .build();
 
-        application.connect_startup(|_| load_css());
+        application.connect_startup(|_| {
+            load_css(); 
+            adw::init();
+        });
+
+        
 
     //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
     //https://github.com/rust-lang/rfcs/pull/2289 is needed to have generic struct member
@@ -564,12 +572,6 @@ fn main() {
         }
     }
     application.connect_activate(move |app| {
-        let window = ApplicationWindow::builder()
-            .application(app)
-            .title("Moog Matriarch Global Settings")
-            .default_width(550)
-            .default_height(400)
-            .build();
         
         let button = gtk::Button::with_label("Connect");
         button.connect_clicked(|_| {
@@ -682,10 +684,21 @@ fn main() {
 
         let vbox: gtk::Box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         vbox.set_homogeneous(false);
-        vbox.prepend(&hbox);
+        vbox.append(
+            &HeaderBar::builder()
+                .title_widget(&adw::WindowTitle::new("Moog Matriarch Global Settings", ""))
+                .build(),
+        );
+        vbox.append(&hbox);
         vbox.append(&scrolled_window);
 
-        window.set_child(Some(&vbox));
+        let window = ApplicationWindow::builder()
+            .application(app)
+            .title("Moog Matriarch Global Settings")
+            .default_width(550)
+            .default_height(400)
+            .content(&vbox)
+            .build();
         window.show();
     });
     
