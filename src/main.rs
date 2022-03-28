@@ -123,7 +123,7 @@ fn main() {
             value:"".to_string(), 
             options:vec!["Snap".to_string(), "Pass-Thru".to_string(), "Relative".to_string()],
             default_value:0,
-            default_mesg: " - blah".to_string(),
+            default_mesg: "".to_string(),
             note: "Actual default different to documented".to_string()}),
         Box::new(ParamListOption {
             id:3, 
@@ -138,7 +138,7 @@ fn main() {
             name:"Transmit Program Change".to_string(), 
             value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
-            default_value:1,
+            default_value:0,
             default_mesg: "".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
