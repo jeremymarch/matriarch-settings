@@ -9,6 +9,7 @@
 //https://stackoverflow.com/questions/873328/how-do-i-put-a-scrollbar-inside-of-a-gtk-comboboxentry
 
 //https://stackoverflow.com/questions/66510406/gtk-rs-how-to-update-view-from-another-thread
+//https://coaxion.net/blog/2019/02/mpsc-channel-api-for-painless-usage-of-threads-with-gtk-in-rust/
 
 use gtk::prelude::*;
 use gtk::{Application};
@@ -21,6 +22,8 @@ use gtk::CssProvider;
 use gtk::StyleContext;
 use gtk::gdk::Display;
 //use adw::prelude::*;
+use std::cell::RefCell;
+use std::sync::mpsc;
 
 use adw::{ApplicationWindow, HeaderBar};
 
@@ -94,6 +97,10 @@ impl GenericOptions for ParamListOption {
     fn get_default_index(&self) -> usize {
         self.default_index
     }
+}
+
+struct UiModel {
+    main_buffer: gtk::TreeView,
 }
 
 //use coremidi; //or https://github.com/Boddlnagg/midir
@@ -384,86 +391,6 @@ fn main() {
     new Param(73, "ARP/SEQ CV OUT Mirrors KB CV", Options(["Off", "On"], 0)),
     new Param(74, "KB CV OUT Mirrors ARP/SEQ CV", Options(["Off", "On"], 0)),
     */
-
-        /* 
-        MatriarchParam {id:2, name:"Knob Mode".to_string(), value:"".to_string()},
-        MatriarchParam {id:3, name:"Note Priority".to_string(), value:"".to_string()},
-        MatriarchParam {id:4, name:"Transmit Program Change".to_string(), value:"".to_string()},
-        MatriarchParam {id:5, name:"Receive Program Change".to_string(), value:"".to_string()},
-        MatriarchParam {id:6, name:"MIDI Input Ports".to_string(), value:"".to_string()},
-        MatriarchParam {id:7, name:"MIDI Output Ports".to_string(), value:"".to_string()},
-        MatriarchParam {id:8, name:"MIDI Echo USB In".to_string(), value:"".to_string()},
-        MatriarchParam {id:9, name:"MIDI Echo DIN In".to_string(), value:"".to_string()},
-        MatriarchParam {id:10, name:"MIDI Channel In".to_string(), value:"".to_string()},
-        MatriarchParam {id:11, name:"MIDI Channel Out".to_string(), value:"".to_string()},
-        MatriarchParam {id:12, name:"MIDI Out Filter - Keys".to_string(), value:"".to_string()},
-        MatriarchParam {id:13, name:"MIDI Out Filter - Wheels".to_string(), value:"".to_string()},
-        MatriarchParam {id:14, name:"MIDI Out Filter - Panel".to_string(), value:"".to_string()},
-        MatriarchParam {id:15, name:"Output 14-bit MIDI CCs".to_string(), value:"".to_string()},
-
-        MatriarchParam {id:16, name:"Local Control: Keys".to_string(), value:"".to_string()},
-        MatriarchParam {id:17, name:"Local Control: Wheels".to_string(), value:"".to_string()},
-        MatriarchParam {id:18, name:"Local Control: Panel".to_string(), value:"".to_string()},
-        MatriarchParam {id:19, name:"Local Control: Arp/Seq".to_string(), value:"".to_string()},
-        MatriarchParam {id:20, name:"Sequence Transpose Mode".to_string(), value:"".to_string()},
-        MatriarchParam {id:21, name:"Arp/Seq Keyed Timing Reset".to_string(), value:"".to_string()},
-        MatriarchParam {id:22, name:"Arp FW/BW Repeats".to_string(), value:"".to_string()},
-        MatriarchParam {id:23, name:"Arp/Seq Swing".to_string(), value:"".to_string()},
-        MatriarchParam {id:24, name:"Sequence Keyboard Control".to_string(), value:"".to_string()},
-        MatriarchParam {id:25, name:"Delay Sequence Change".to_string(), value:"".to_string()},
-        MatriarchParam {id:26, name:"Sequence Latch Restart".to_string(), value:"".to_string()},
-        MatriarchParam {id:27, name:"Arp/Seq Clock Input Mode".to_string(), value:"".to_string()},
-        MatriarchParam {id:28, name:"Arp/Seq Clock Output".to_string(), value:"".to_string()},
-        MatriarchParam {id:29, name:"Arp MIDI Output".to_string(), value:"".to_string()},
-        MatriarchParam {id:30, name:"Send MIDI Clock".to_string(), value:"".to_string()},
-
-        MatriarchParam {id:31, name:"Send MIDI Start/Stop".to_string(), value:"".to_string()},
-        MatriarchParam {id:32, name:"Follow MIDI Clock".to_string(), value:"".to_string()},
-        MatriarchParam {id:33, name:"Follow MIDI Start/Stop".to_string(), value:"".to_string()},
-        MatriarchParam {id:34, name:"Follow Song Position Pointer".to_string(), value:"".to_string()},
-        MatriarchParam {id:35, name:"Clock Input PPQN Index".to_string(), value:"".to_string()},
-        MatriarchParam {id:36, name:"Clock Output PPQN Index".to_string(), value:"".to_string()},
-        MatriarchParam {id:37, name:"Pitch Bend Range (Semitones)".to_string(), value:"".to_string()},
-        MatriarchParam {id:38, name:"Keyboard Octave Transpose".to_string(), value:"".to_string()},
-        MatriarchParam {id:39, name:"Delayed Keyboard Octave Transpose".to_string(), value:"".to_string()},
-        MatriarchParam {id:40, name:"Glide Type".to_string(), value:"".to_string()},
-        MatriarchParam {id:41, name:"Gated Glide".to_string(), value:"".to_string()},
-        MatriarchParam {id:42, name:"Legato Glide".to_string(), value:"".to_string()},
-        MatriarchParam {id:43, name:"Osc 2 Freq Knob Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:44, name:"Osc 3 Freq Knob Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:45, name:"Osc 4 Freq Knob Range".to_string(), value:"".to_string()},
-
-        MatriarchParam {id:46, name:"Hard Sync Enable".to_string(), value:"".to_string()},
-        MatriarchParam {id:47, name:"Osc 2 Hard Sync".to_string(), value:"".to_string()},
-        MatriarchParam {id:48, name:"Osc 3 Hard Sync".to_string(), value:"".to_string()},
-        MatriarchParam {id:49, name:"Osc 4 Hard Sync".to_string(), value:"".to_string()},
-        MatriarchParam {id:50, name:"Delay Ping Pong".to_string(), value:"".to_string()},
-        MatriarchParam {id:51, name:"Delay Sync".to_string(), value:"".to_string()},
-        MatriarchParam {id:52, name:"Delay Filter Brightness".to_string(), value:"".to_string()},
-        MatriarchParam {id:53, name:"Delay CV Sync-Bend".to_string(), value:"".to_string()},
-        MatriarchParam {id:54, name:"Tap-Tempo Clock Division Persistence".to_string(), value:"".to_string()},
-        MatriarchParam {id:55, name:"Paraphony Mode".to_string(), value:"".to_string()},
-        MatriarchParam {id:56, name:"Paraphonic Unison".to_string(), value:"".to_string()},
-        MatriarchParam {id:57, name:"Multi Trig".to_string(), value:"".to_string()},
-        MatriarchParam {id:58, name:"Pitch Variance".to_string(), value:"".to_string()},
-        MatriarchParam {id:59, name:"KB CV OUT Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:60, name:"Arp/Seq CV OUT Range".to_string(), value:"".to_string()},
-
-        MatriarchParam {id:61, name:"KB VEL OUT Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:62, name:"Arp/Seq VEL OUT Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:63, name:"KB AT OUT Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:64, name:"MOD WHL OUT Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:65, name:"KB GATE OUT Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:66, name:"Arp/Seq GATE OUT Range".to_string(), value:"".to_string()},
-        MatriarchParam {id:67, name:"Round-Robin Mode".to_string(), value:"".to_string()},
-        MatriarchParam {id:68, name:"Restore Stolen Voices".to_string(), value:"".to_string()},
-        MatriarchParam {id:69, name:"Update Unison on Note-Off".to_string(), value:"".to_string()},
-        MatriarchParam {id:70, name:"Mod Oscillator Square Wave Polarity".to_string(), value:"".to_string()},
-        MatriarchParam {id:71, name:"Noise Filter Cutoff".to_string(), value:"".to_string()},
-        MatriarchParam {id:72, name:"Arp/Seq Random Repeats".to_string(), value:"".to_string()},
-        MatriarchParam {id:73, name:"ARP/SEQ CV OUT Mirrors KB CV".to_string(), value:"".to_string()},
-        MatriarchParam {id:74, name:"KB CV OUT Mirrors ARP/SEQ CV".to_string(), value:"".to_string()},
-        */
     ];
 
                     /*
@@ -602,7 +529,7 @@ fn main() {
         */
 
         let view_list = TreeView::new();
-        {
+        
             let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
             let model_list_of_data = ListStore::new(types_inside_columns);
 
@@ -677,7 +604,7 @@ fn main() {
             view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); 
 
             view_list.append_column(&view_column_3);
-        }
+        
 
         view_list.expand_all();
 
@@ -712,6 +639,11 @@ fn main() {
             .build();
         window.show();
 
+        let (tx, rx) = mpsc::channel();
+        GLOBAL.with(|global| {
+            *global.borrow_mut() = Some((model_list_of_data, rx));
+        });
+
         let mut input = String::new();
     
         let mut midi_in = MidiInput::new("midir reading input").unwrap();
@@ -719,7 +651,9 @@ fn main() {
         
         // Get an input port (read from console if multiple are available)
         let in_ports = midi_in.ports();
+        println!("here1");
         if in_ports.len() > 0 {
+            println!("here2");
             let in_port = &in_ports[0];
             /* 
             let in_port = match in_ports.len() {
@@ -746,13 +680,23 @@ fn main() {
             */
             //println!("\nOpening connection");
             //let in_port_name = midi_in.port_name(in_port).unwrap();
-            
+
+
+            println!("here3");
             // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-            let log_all_bytes:Vec<Vec<u8>> = Vec::new();
-            let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, log| {
+            //let log_all_bytes:Vec<Vec<u8>> = Vec::new();
+            let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
+                println!("here4");
                 println!("{}: {:?} (len = {})", stamp, message, message.len());
-                log.push(message.to_vec());
-            }, log_all_bytes).unwrap();
+                //log.push(message.to_vec());
+                tx.send(message.to_vec()).unwrap();
+                // then tell the UI thread to read from that channel
+                glib::source::idle_add(|| {
+                    check_for_new_message();
+                    return glib::source::Continue(false);
+                });
+
+            }, tx).unwrap();
         }
     });
     
@@ -807,6 +751,10 @@ fn main() {
     }*/
     
 }
+
+thread_local!(
+    static GLOBAL: RefCell<Option<(ListStore, mpsc::Receiver<Vec<u8>>)>> = RefCell::new(None);
+);
 /*
 fn get_source_index() -> usize {
     let mut args_iter = env::args();
@@ -849,6 +797,17 @@ fn print_sources() {
     }
 }
 */
+
+fn check_for_new_message() {
+    GLOBAL.with(|global| {
+        if let Some((model_list_of_data, rx)) = &*global.borrow() {
+            let received: Vec<u8> = rx.recv().unwrap();
+            //ui.main_buffer.set_text(&received);
+            //model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() );
+            println!("data: {:?}", received);
+        }
+    });
+}
 
 fn load_css() {
     // Load the CSS file and add it to the provider
