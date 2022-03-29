@@ -720,7 +720,7 @@ fn main() {
     
     // Get an input port (read from console if multiple are available)
     let in_ports = midi_in.ports();
-    let mut _conn_in;
+    let _conn_in;
     if in_ports.len() > 0 {
         let in_port = &in_ports[0];
         /* 
