@@ -6,6 +6,7 @@
 
 //scrolling on combobox
 //https://mail.gnome.org/archives/gtk-list/2016-December/msg00035.html
+//https://stackoverflow.com/questions/873328/how-do-i-put-a-scrollbar-inside-of-a-gtk-comboboxentry
 
 use gtk::prelude::*;
 use gtk::{Application};
@@ -677,12 +678,12 @@ fn main() {
             .child(&view_list)
             .build();
 
-            let hbox: gtk::Box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+            let hbox: gtk::Box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
             hbox.set_homogeneous(true);
             hbox.prepend(&button);
             hbox.append(&combo);
 
-        let vbox: gtk::Box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let vbox: gtk::Box = gtk::Box::new(gtk::Orientation::Vertical, 4);
         vbox.set_homogeneous(false);
         vbox.append(
             &HeaderBar::builder()
