@@ -8,6 +8,8 @@
 //https://mail.gnome.org/archives/gtk-list/2016-December/msg00035.html
 //https://stackoverflow.com/questions/873328/how-do-i-put-a-scrollbar-inside-of-a-gtk-comboboxentry
 
+//https://stackoverflow.com/questions/66510406/gtk-rs-how-to-update-view-from-another-thread
+
 use gtk::prelude::*;
 use gtk::{Application};
 use gtk::TreeView;
@@ -18,9 +20,9 @@ use gtk::glib;
 use gtk::CssProvider;
 use gtk::StyleContext;
 use gtk::gdk::Display;
-use adw::prelude::*;
+//use adw::prelude::*;
 
-use adw::{ActionRow, ApplicationWindow, HeaderBar};
+use adw::{ApplicationWindow, HeaderBar};
 
 struct ParamListOption {
     id: u32,
@@ -94,8 +96,12 @@ impl GenericOptions for ParamListOption {
     }
 }
 
-use coremidi; //or https://github.com/Boddlnagg/midir
+//use coremidi; //or https://github.com/Boddlnagg/midir
+//use std::error::Error;
+use midir::{MidiInput, Ignore};
 //use std::env;
+
+use std::sync::Arc;
 
 fn main() {
     let application = Application::builder()
@@ -562,7 +568,7 @@ fn main() {
     new Param(74, "KB CV OUT Mirrors ARP/SEQ CV", Options(["Off", "On"], 0)),
     */
 
-
+    /* 
     let mut matriarch_index:Option<usize> = None;
     let v = get_sources();
     if v.len() > 0 {
@@ -572,6 +578,9 @@ fn main() {
             }
         }
     }
+    */
+    
+
     application.connect_activate(move |app| {
         
         let button = gtk::Button::with_label("Connect");
@@ -580,6 +589,7 @@ fn main() {
         });
 
         let combo = gtk::ComboBoxText::new();
+        /*
         if v.len() == 0 {
             combo.append_text("No midi devices connected");
         }
@@ -589,8 +599,8 @@ fn main() {
             }
         }
         combo.set_active(Some(0));
+        */
 
-        // change to list?
         let view_list = TreeView::new();
         {
             let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
@@ -701,9 +711,52 @@ fn main() {
             .content(&vbox)
             .build();
         window.show();
+
+        let mut input = String::new();
+    
+        let mut midi_in = MidiInput::new("midir reading input").unwrap();
+        midi_in.ignore(Ignore::None);
+        
+        // Get an input port (read from console if multiple are available)
+        let in_ports = midi_in.ports();
+        if in_ports.len() > 0 {
+            let in_port = &in_ports[0];
+            /* 
+            let in_port = match in_ports.len() {
+                0 => panic!("no ports"),
+                _ => {
+                    println!("Choosing the only available input port: {}", midi_in.port_name(&in_ports[0]).unwrap());
+                    &in_ports[0]
+                },
+                
+                _ => {
+                    println!("\nAvailable input ports:");
+                    for (i, p) in in_ports.iter().enumerate() {
+                        println!("{}: {}", i, midi_in.port_name(p).unwrap());
+                    }
+                    print!("Please select input port: ");
+    
+                    stdout().flush()?;
+                    let mut input = String::new();
+                    stdin().read_line(&mut input)?;
+                    in_ports.get(input.trim().parse::<usize>()?)
+                            .ok_or("invalid input port selected")?
+                }
+            };
+            */
+            //println!("\nOpening connection");
+            //let in_port_name = midi_in.port_name(in_port).unwrap();
+            
+            // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
+            let log_all_bytes:Vec<Vec<u8>> = Vec::new();
+            let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, log| {
+                println!("{}: {:?} (len = {})", stamp, message, message.len());
+                log.push(message.to_vec());
+            }, log_all_bytes).unwrap();
+        }
     });
     
-
+    /* 
     let source;
     let input_port;
     let client;
@@ -745,12 +798,13 @@ fn main() {
             input_port = Err(0);
             source = None;
         }
-    }
+    }*/
+
     application.run();
-    
+    /* 
     if input_port.is_ok() && source.is_some() {
         input_port.unwrap().disconnect_source(&source.unwrap()).unwrap();
-    }
+    }*/
     
 }
 /*
