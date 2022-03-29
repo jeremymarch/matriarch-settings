@@ -108,8 +108,6 @@ struct UiModel {
 use midir::{MidiInput, Ignore};
 //use std::env;
 
-use std::sync::Arc;
-
 fn main() {
     let application = Application::builder()
         .application_id("com.philolog.matriarch-settings")
@@ -641,64 +639,72 @@ fn main() {
 
         let (tx, rx) = mpsc::channel();
         GLOBAL.with(|global| {
-            *global.borrow_mut() = Some((model_list_of_data, rx));
+            *global.borrow_mut() = Some((model_list_of_data, rx, tx));
         });
-
-        let mut input = String::new();
-    
-        let mut midi_in = MidiInput::new("midir reading input").unwrap();
-        midi_in.ignore(Ignore::None);
-        
-        // Get an input port (read from console if multiple are available)
-        let in_ports = midi_in.ports();
-        println!("here1");
-        if in_ports.len() > 0 {
-            println!("here2");
-            let in_port = &in_ports[0];
-            /* 
-            let in_port = match in_ports.len() {
-                0 => panic!("no ports"),
-                _ => {
-                    println!("Choosing the only available input port: {}", midi_in.port_name(&in_ports[0]).unwrap());
-                    &in_ports[0]
-                },
-                
-                _ => {
-                    println!("\nAvailable input ports:");
-                    for (i, p) in in_ports.iter().enumerate() {
-                        println!("{}: {}", i, midi_in.port_name(p).unwrap());
-                    }
-                    print!("Please select input port: ");
-    
-                    stdout().flush()?;
-                    let mut input = String::new();
-                    stdin().read_line(&mut input)?;
-                    in_ports.get(input.trim().parse::<usize>()?)
-                            .ok_or("invalid input port selected")?
-                }
-            };
-            */
-            //println!("\nOpening connection");
-            //let in_port_name = midi_in.port_name(in_port).unwrap();
-
-
-            println!("here3");
-            // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-            //let log_all_bytes:Vec<Vec<u8>> = Vec::new();
-            let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
-                println!("here4");
-                println!("{}: {:?} (len = {})", stamp, message, message.len());
-                //log.push(message.to_vec());
-                tx.send(message.to_vec()).unwrap();
-                // then tell the UI thread to read from that channel
-                glib::source::idle_add(|| {
-                    check_for_new_message();
-                    return glib::source::Continue(false);
-                });
-
-            }, tx).unwrap();
-        }
     });
+
+    let mut input = String::new();
+    
+    let mut midi_in = MidiInput::new("midir reading input").unwrap();
+    midi_in.ignore(Ignore::None);
+    
+    // Get an input port (read from console if multiple are available)
+    let in_ports = midi_in.ports();
+    println!("here1");
+    let _conn_in;
+    if in_ports.len() > 0 {
+        println!("here2");
+        let in_port = &in_ports[0];
+        /* 
+        let in_port = match in_ports.len() {
+            0 => panic!("no ports"),
+            _ => {
+                println!("Choosing the only available input port: {}", midi_in.port_name(&in_ports[0]).unwrap());
+                &in_ports[0]
+            },
+            
+            _ => {
+                println!("\nAvailable input ports:");
+                for (i, p) in in_ports.iter().enumerate() {
+                    println!("{}: {}", i, midi_in.port_name(p).unwrap());
+                }
+                print!("Please select input port: ");
+
+                stdout().flush()?;
+                let mut input = String::new();
+                stdin().read_line(&mut input)?;
+                in_ports.get(input.trim().parse::<usize>()?)
+                        .ok_or("invalid input port selected")?
+            }
+        };
+        */
+        //println!("\nOpening connection");
+        //let in_port_name = midi_in.port_name(in_port).unwrap();
+
+
+        println!("here3");
+        // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
+        //let log_all_bytes:Vec<Vec<u8>> = Vec::new();
+        _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _| {
+            println!("here4");
+            println!("{}: {:?} (len = {})", stamp, message, message.len());
+
+            GLOBAL.with(|global| {
+                println!("here6");
+                if let Some((model_list_of_data, rx, tx)) = &*global.borrow() {
+                    println!("here7");
+                    //log.push(message.to_vec());
+                    tx.send(message.to_vec()).unwrap();
+                    // then tell the UI thread to read from that channel
+                    glib::source::idle_add(|| {
+                        check_for_new_message();
+                        return glib::source::Continue(false);
+                    });
+                }
+            });
+
+        }, ()).unwrap();
+    }
     
     /* 
     let source;
@@ -753,7 +759,7 @@ fn main() {
 }
 
 thread_local!(
-    static GLOBAL: RefCell<Option<(ListStore, mpsc::Receiver<Vec<u8>>)>> = RefCell::new(None);
+    static GLOBAL: RefCell<Option<(ListStore, mpsc::Receiver<Vec<u8>>, mpsc::Sender<Vec<u8>>)>> = RefCell::new(None);
 );
 /*
 fn get_source_index() -> usize {
@@ -800,7 +806,8 @@ fn print_sources() {
 
 fn check_for_new_message() {
     GLOBAL.with(|global| {
-        if let Some((model_list_of_data, rx)) = &*global.borrow() {
+        println!("here5");
+        if let Some((model_list_of_data, rx, tx)) = &*global.borrow() {
             let received: Vec<u8> = rx.recv().unwrap();
             //ui.main_buffer.set_text(&received);
             //model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() );
