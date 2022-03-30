@@ -106,8 +106,10 @@ struct UiModel {
 }
 
 //use coremidi; //or https://github.com/Boddlnagg/midir
-//use std::error::Error;
+use std::error::Error;
 use midir::{MidiInput, Ignore, MidiOutput, MidiOutputConnection };
+use std::thread::sleep;
+use std::time::Duration;
 
 //use std::env;
 
@@ -668,7 +670,6 @@ fn main() {
 
     let _conn_in;
     if in_ports.len() > 0 {
-        println!("here2");
         let in_port = &in_ports[0];
         /* 
         let in_port = match in_ports.len() {
@@ -696,18 +697,14 @@ fn main() {
         //println!("\nOpening connection");
         //let in_port_name = midi_in.port_name(in_port).unwrap();
 
-
-        println!("here3");
         // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
         //let log_all_bytes:Vec<Vec<u8>> = Vec::new();
         _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
-            println!("here4");
-            println!("{}: {:?} (len = {})", stamp, message, message.len());
+            println!("received: {}: {:?} (len = {})", stamp, message, message.len());
 
             //GLOBAL.with(|global| {
-                println!("here6");
                 //if let Some((model_list_of_data, rx, tx)) = &*global.borrow() {
-                    println!("here7");
+
                     //log.push(message.to_vec());
                     tx.send(message.to_vec()).unwrap();
                     // then tell the UI thread to read from that channel
@@ -726,7 +723,7 @@ fn main() {
     if let Some(new_port) = out_ports.last() {
         println!("Connecting to port '{}' ...", midi_out.port_name(&new_port).unwrap());
         let mut conn_out = midi_out.connect(&new_port, "midir-test").unwrap();
-        read_param(conn_out, 2);
+        read_param(conn_out, 1);
     }
     
     /* 
@@ -825,6 +822,7 @@ fn print_sources() {
 */
 
 fn update_param_row(list: &ListStore, param_row:i32, param_value:i32) {
+    println!("Updating ui for param {} to {}.", param_row, param_value);
     //if param_row > -1 && param_row < 23 { //this is already guarded by whether the row_iter exists
         let row_path = TreePath::from_indices(&[param_row]);
         if let Some(row_iter) = list.iter(&row_path) {
@@ -843,12 +841,12 @@ fn update_param_row(list: &ListStore, param_row:i32, param_value:i32) {
 
 fn check_for_new_message() {
     GLOBAL_RX.with(|global| {
-        println!("checking for message...");
+        //println!("checking for message...");
         if let Some(rx) = &*global.borrow() {
             let received: Vec<u8> = rx.recv().unwrap();
             //ui.main_buffer.set_text(&received);
             //
-            println!("received: {:?}", received);
+            println!("passed message: {:?}", received);
 
             if received.len() > 0 && received.len() >= 7 && received[0] == 0xF0 && received[received.len() - 1] == 0xF7 { //if sysex
                 let param_row = received[4];
@@ -862,7 +860,6 @@ fn check_for_new_message() {
 
                 GLOBAL_LISTSTORE.with(|global| {
                     if let Some(list) = &*global.borrow() {
-                        println!("passed liststore: {:?}", list);
                         update_param_row(list, param_row.into(), param_value.into());
                     }
                 });
@@ -884,7 +881,8 @@ fn load_css() {
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 }
-
+/* 
+//coremidi
 fn get_sources() -> Vec<String> {
     let mut v = Vec::new();
     for (_i, source) in coremidi::Sources.into_iter().enumerate() {
@@ -895,7 +893,7 @@ fn get_sources() -> Vec<String> {
     }
     v
 }
-
+*/
 fn param_changed(id: i32, param_index: i32, value: &str) {
     println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
     set_param(id, param_index);
@@ -912,10 +910,13 @@ fn set_param(param_id: i32, value: i32) {
     //midi_out.send(msg);
 }
 
-fn read_param(mut conn_out: MidiOutputConnection, param_id: u8) {
+fn read_param(mut conn_out: MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
     let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
     println!("Sending read request for Parameter {}",  param_id);
-    conn_out.send(&msg);
+    sleep(Duration::from_millis(200));
+    conn_out.send(&msg)?;
+
+    Ok(())
 }
 
 fn update_cell(param_id:i32, value_index:i32) {

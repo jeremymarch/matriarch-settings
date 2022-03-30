@@ -105,17 +105,7 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25bfd746d203017f7d5cbd31ee5d8e17f94b6521c7af77ece6c9e4b2d4b16c67"
 dependencies = [
- "core-foundation-sys 0.2.3",
- "libc",
-]
-
-[[package]]
-name = "core-foundation"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "194a7a9e6de53fa55116934067c844d9d749312f75c6f6d0980e8c252f8c2146"
-dependencies = [
- "core-foundation-sys 0.8.3",
+ "core-foundation-sys",
  "libc",
 ]
 
@@ -129,32 +119,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-foundation-sys"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
-
-[[package]]
 name = "coremidi"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99f92de5534f182bad5f91cad85611ab222cb6e237a0555e06c65a24936c3173"
 dependencies = [
- "core-foundation 0.2.3",
- "core-foundation-sys 0.2.3",
- "coremidi-sys 2.0.2",
+ "core-foundation",
+ "core-foundation-sys",
+ "coremidi-sys",
  "time",
-]
-
-[[package]]
-name = "coremidi"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a7847ca018a67204508b77cb9e6de670125075f7464fff5f673023378fa34f5"
-dependencies = [
- "core-foundation 0.9.3",
- "core-foundation-sys 0.8.3",
- "coremidi-sys 3.1.0",
 ]
 
 [[package]]
@@ -163,16 +136,7 @@ version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07f05827cebb30dcd539ff1ac9bf6764f574a15fa147f8572f99d7617142f95e"
 dependencies = [
- "core-foundation-sys 0.2.3",
-]
-
-[[package]]
-name = "coremidi-sys"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79a6deed0c97b2d40abbab77e4c97f81d71e162600423382c277dd640019116c"
-dependencies = [
- "core-foundation-sys 0.8.3",
+ "core-foundation-sys",
 ]
 
 [[package]]
@@ -564,7 +528,6 @@ dependencies = [
 name = "matriarch-settings"
 version = "0.1.0"
 dependencies = [
- "coremidi 0.6.0",
  "gtk4",
  "libadwaita",
  "midir",
@@ -593,7 +556,7 @@ checksum = "25df1e7836ca65078a121efed77049084a434838562b9892d0401bdfb59244cc"
 dependencies = [
  "alsa",
  "bitflags",
- "coremidi 0.4.0",
+ "coremidi",
  "js-sys",
  "libc",
  "memalloc",
