@@ -19,6 +19,8 @@ use gtk::ListStore;
 use gtk::TreeViewColumn;
 use gtk::glib;
 use gtk::CssProvider;
+use gtk::TreePath;
+use crate::glib::Value;
 use gtk::StyleContext;
 use gtk::gdk::Display;
 //use adw::prelude::*;
@@ -105,7 +107,8 @@ struct UiModel {
 
 //use coremidi; //or https://github.com/Boddlnagg/midir
 //use std::error::Error;
-use midir::{MidiInput, Ignore};
+use midir::{MidiInput, Ignore, MidiOutput, MidiOutputConnection };
+
 //use std::env;
 
 thread_local!(
@@ -656,15 +659,13 @@ fn main() {
             *global.borrow_mut() = Some(model_list_of_data);
         });
     });
-
-    let mut input = String::new();
     
     let mut midi_in = MidiInput::new("midir reading input").unwrap();
     midi_in.ignore(Ignore::None);
     
     // Get an input port (read from console if multiple are available)
     let in_ports = midi_in.ports();
-    println!("here1");
+
     let _conn_in;
     if in_ports.len() > 0 {
         println!("here2");
@@ -718,6 +719,14 @@ fn main() {
             //});
 
         }, tx).unwrap();
+    }
+
+    let midi_out = MidiOutput::new("Matriarch Settings Output").unwrap();
+    let out_ports = midi_out.ports();
+    if let Some(new_port) = out_ports.last() {
+        println!("Connecting to port '{}' ...", midi_out.port_name(&new_port).unwrap());
+        let mut conn_out = midi_out.connect(&new_port, "midir-test").unwrap();
+        read_param(conn_out, 2);
     }
     
     /* 
@@ -814,8 +823,6 @@ fn print_sources() {
     }
 }
 */
-use gtk::TreePath;
-use crate::glib::Value;
 
 fn update_param_row(list: &ListStore, param_row:i32, param_value:i32) {
     //if param_row > -1 && param_row < 23 { //this is already guarded by whether the row_iter exists
@@ -836,23 +843,30 @@ fn update_param_row(list: &ListStore, param_row:i32, param_value:i32) {
 
 fn check_for_new_message() {
     GLOBAL_RX.with(|global| {
-        println!("here5");
+        println!("checking for message...");
         if let Some(rx) = &*global.borrow() {
             let received: Vec<u8> = rx.recv().unwrap();
             //ui.main_buffer.set_text(&received);
             //
-            println!("data: {:?}", received);
+            println!("received: {:?}", received);
 
-            GLOBAL_LISTSTORE.with(|global| {
-                if let Some(list) = &*global.borrow() {
-                    println!("blah {:?}", list);
+            if received.len() > 0 && received.len() >= 7 && received[0] == 0xF0 && received[received.len() - 1] == 0xF7 { //if sysex
+                let param_row = received[4];
+        
+                let msb = received[5];
+                let lsb = received[6];
+                let param_value = 128 * msb + lsb;
 
-                    let param_row:i32 = 1;
-                    let param_value:i32 = 9;
+                //let param_row:i32 = 1;
+                //let param_value:i32 = 9;
 
-                    update_param_row(list, param_row, param_value);
-                }
-            });
+                GLOBAL_LISTSTORE.with(|global| {
+                    if let Some(list) = &*global.borrow() {
+                        println!("passed liststore: {:?}", list);
+                        update_param_row(list, param_row.into(), param_value.into());
+                    }
+                });
+            }
         }
     });
 }
@@ -898,11 +912,10 @@ fn set_param(param_id: i32, value: i32) {
     //midi_out.send(msg);
 }
 
-fn read_param(param_id: i32) {
-    let msg:Vec<i32> = vec![0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+fn read_param(mut conn_out: MidiOutputConnection, param_id: u8) {
+    let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
     println!("Sending read request for Parameter {}",  param_id);
-    //params_waiting[param_id] = true;
-    //midi_out.send(msg);
+    conn_out.send(&msg);
 }
 
 fn update_cell(param_id:i32, value_index:i32) {
