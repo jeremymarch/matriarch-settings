@@ -810,6 +810,7 @@ fn print_sources() {
     }
 }
 */
+use gtk::TreePath;
 
 fn check_for_new_message() {
     GLOBAL.with(|global| {
@@ -823,7 +824,11 @@ fn check_for_new_message() {
             GLOBAL_LISTSTORE.with(|global| {
                 if let Some(list) = &*global.borrow() {
                     println!("blah {:?}", list);
-                    //model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() );
+
+                    let path = TreePath::from_indices(&[1]);
+                    if let Some(iter) = list.iter(&path) {
+                        list.set_value(&iter, 3, &"blahblah".to_value() );
+                    }
                 }
             });
         }
