@@ -14,7 +14,6 @@
 use gtk::prelude::*;
 use gtk::{Application};
 use gtk::TreeView;
-//use gtk::ListView;
 use gtk::ListStore;
 use gtk::TreeViewColumn;
 use gtk::glib;
@@ -28,6 +27,12 @@ use std::cell::RefCell;
 use std::sync::mpsc;
 
 use adw::{ApplicationWindow, HeaderBar};
+
+use std::error::Error;
+use midir::{MidiInput, Ignore, MidiOutput, MidiOutputConnection };
+use std::thread::sleep;
+use std::time::Duration;
+
 
 struct ParamListOption {
     id: u32,
@@ -101,18 +106,6 @@ impl GenericOptions for ParamListOption {
     }
 }
 
-struct UiModel {
-    main_buffer: gtk::TreeView,
-}
-
-//use coremidi; //or https://github.com/Boddlnagg/midir
-use std::error::Error;
-use midir::{MidiInput, Ignore, MidiOutput, MidiOutputConnection };
-use std::thread::sleep;
-use std::time::Duration;
-
-//use std::env;
-
 thread_local!(
     static GLOBAL_RX: RefCell<Option<mpsc::Receiver<Vec<u8>>>> = RefCell::new(None);
 
@@ -133,7 +126,7 @@ fn main() {
 
     //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
     //https://github.com/rust-lang/rfcs/pull/2289 is needed to have generic struct member
-    let mut params:[Box<dyn GenericOptions>; 23] = [
+    let params:[Box<dyn GenericOptions>; 23] = [
         Box::new(ParamRangeOption {
             id:0, 
             name:"Unit ID".to_string(), 
@@ -664,56 +657,21 @@ fn main() {
     
     let mut midi_in = MidiInput::new("midir reading input").unwrap();
     midi_in.ignore(Ignore::None);
-    
-    // Get an input port (read from console if multiple are available)
     let in_ports = midi_in.ports();
 
-    let _conn_in;
+    let _conn_in; //declare here for scope
     if in_ports.len() > 0 {
         let in_port = &in_ports[0];
-        /* 
-        let in_port = match in_ports.len() {
-            0 => panic!("no ports"),
-            _ => {
-                println!("Choosing the only available input port: {}", midi_in.port_name(&in_ports[0]).unwrap());
-                &in_ports[0]
-            },
-            
-            _ => {
-                println!("\nAvailable input ports:");
-                for (i, p) in in_ports.iter().enumerate() {
-                    println!("{}: {}", i, midi_in.port_name(p).unwrap());
-                }
-                print!("Please select input port: ");
 
-                stdout().flush()?;
-                let mut input = String::new();
-                stdin().read_line(&mut input)?;
-                in_ports.get(input.trim().parse::<usize>()?)
-                        .ok_or("invalid input port selected")?
-            }
-        };
-        */
-        //println!("\nOpening connection");
-        //let in_port_name = midi_in.port_name(in_port).unwrap();
-
-        // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-        //let log_all_bytes:Vec<Vec<u8>> = Vec::new();
         _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
             println!("received: {}: {:?} (len = {})", stamp, message, message.len());
 
-            //GLOBAL.with(|global| {
-                //if let Some((model_list_of_data, rx, tx)) = &*global.borrow() {
-
-                    //log.push(message.to_vec());
-                    tx.send(message.to_vec()).unwrap();
-                    // then tell the UI thread to read from that channel
-                    glib::source::idle_add(|| {
-                        check_for_new_message();
-                        return glib::source::Continue(false);
-                    });
-                //}
-            //});
+            tx.send(message.to_vec()).unwrap();
+            
+            glib::source::idle_add(|| { // tell ui thread to read from channel
+                check_for_new_message();
+                return glib::source::Continue(false);
+            });
 
         }, tx).unwrap();
     }
@@ -722,104 +680,15 @@ fn main() {
     let out_ports = midi_out.ports();
     if let Some(new_port) = out_ports.last() {
         println!("Connecting to port '{}' ...", midi_out.port_name(&new_port).unwrap());
-        let mut conn_out = midi_out.connect(&new_port, "midir-test").unwrap();
-        read_param(conn_out, 1);
-    }
-    
-    /* 
-    let source;
-    let input_port;
-    let client;
-    match matriarch_index {
-        Some(matriarch_index) => {
-            
-            //println!("Source index: {}", matriarch_index);
-
-            source = coremidi::Source::from_index(matriarch_index);
-            match source {
-                Some(ref source) => { 
-                    //println!("Source display name: {}", source.display_name().unwrap());
-
-                    client = coremidi::Client::new("Matriarch Settings Client").unwrap();
-
-                    let callback = |packet_list: &coremidi::PacketList| {
-                        println!("{}", packet_list);
-                    };
-
-                    input_port = client.input_port("Matriarch Settings Port", callback);
-                    match input_port {
-                        Ok(ref input_port) => {
-                            input_port.connect_source(&source).unwrap();
-                        },
-                        Err(_input_port) => {
-                            println!("input port not created");
-                            std::process::exit(1);
-                        }
-                    }
-                },
-                None => {
-                    println!("source port not created");
-                    std::process::exit(1);
-                }
-            }
-        },
-        None => {
-            println!("source index not set");
-            input_port = Err(0);
-            source = None;
+        let conn_out = midi_out.connect(&new_port, "Matriarch Settings Output Connection").unwrap();
+        match read_param(conn_out, 1) {
+            Ok(_a) => (),
+            Err(_e) => panic!("error reading param"),
         }
-    }*/
+    }
 
     application.run();
-    /* 
-    if input_port.is_ok() && source.is_some() {
-        input_port.unwrap().disconnect_source(&source.unwrap()).unwrap();
-    }*/
-    
 }
-
-/*
-fn get_source_index() -> usize {
-    let mut args_iter = env::args();
-    let tool_name = args_iter
-        .next()
-        .and_then(|path| {
-            path.split(std::path::MAIN_SEPARATOR)
-                .last()
-                .map(|v| v.to_string())
-        })
-        .unwrap_or_else(|| "receive".to_string());
-
-    match args_iter.next() {
-        Some(arg) => match arg.parse::<usize>() {
-            Ok(index) => {
-                if index >= coremidi::Sources::count() {
-                    println!("Source index out of range: {}", index);
-                    std::process::exit(-1);
-                }
-                index
-            }
-            Err(_) => {
-                println!("Wrong source index: {}", arg);
-                std::process::exit(-1);
-            }
-        },
-        None => {
-            println!("Usage: {} <source-index>", tool_name);
-            std::process::exit(-1);
-        }
-    }
-}
-*/
-/* 
-fn print_sources() {
-    for (i, source) in coremidi::Sources.into_iter().enumerate() {
-        if let Some(display_name) = source.display_name() {
-            println!("[{}] {}", i, display_name)
-        }
-    }
-}
-*/
 
 fn update_param_row(list: &ListStore, param_row:i32, param_value:i32) {
     println!("Updating ui for param {} to {}.", param_row, param_value);
@@ -910,22 +779,6 @@ fn set_param(param_id: i32, value: i32) {
     //midi_out.send(msg);
 }
 
-fn read_param(mut conn_out: MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
-    let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-    println!("Sending read request for Parameter {}",  param_id);
-    sleep(Duration::from_millis(200));
-    conn_out.send(&msg)?;
-
-    Ok(())
-}
-
-fn update_cell(param_id:i32, value_index:i32) {
-    //get value from params array
-    //set text column of combocellrenderer
-    //let text_value = params[param_id].get_options()[value_index];
-    //model_list_of_data.set_value(&list_iter, 3, text_value ); 
-}
-
 /* 
 function set_param(param_id, value) {
     let msb = 0;
@@ -934,11 +787,13 @@ function set_param(param_id, value) {
     let msg = [0xf0, 0x04, 0x17, 0x23, param_id, msb, lsb, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7]
     midi_out.send(msg);
 }
-
-function read_param(param_id) {
-    let msg = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7]
-    console.log('Sending read request for Parameter ' + param_id);
-    params_waiting[param_id] = true;
-    midi_out.send(msg);
-}
 */
+
+fn read_param(mut conn_out: MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
+    let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+    println!("Sending read request for Parameter {}",  param_id);
+    sleep(Duration::from_millis(200));
+    conn_out.send(&msg)?;
+
+    Ok(())
+}
