@@ -109,7 +109,7 @@ use midir::{MidiInput, Ignore};
 //use std::env;
 
 thread_local!(
-    static GLOBAL: RefCell<Option<(Option<ListStore>, mpsc::Receiver<Vec<u8>>)>> = RefCell::new(None);
+    static GLOBAL_RX: RefCell<Option<mpsc::Receiver<Vec<u8>>>> = RefCell::new(None);
 
     static GLOBAL_LISTSTORE: RefCell<Option<ListStore>> = RefCell::new(None);
 );
@@ -511,8 +511,8 @@ fn main() {
     }
     */
     let (tx, rx) = mpsc::channel();
-    GLOBAL.with(|global| {
-        *global.borrow_mut() = Some((None, rx));
+    GLOBAL_RX.with(|global| {
+        *global.borrow_mut() = Some(rx);
     });
 
     application.connect_activate(move |app| {
@@ -540,14 +540,18 @@ fn main() {
             let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
             let model_list_of_data = ListStore::new(types_inside_columns);
 
-
-
             for p in &params {
                 let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
                 for o in &p.get_options() {
                     model_for_combo.insert_with_values(None, &[(0, &o)]);
                 }
-                model_list_of_data.insert_with_values(None, &[(0, &p.get_id()), (1, &p.get_name()), (2, &model_for_combo), (3, &p.get_options()[p.get_default_index()])]);
+                model_list_of_data.insert_with_values(None, 
+                    &[
+                        ( 0, &p.get_id() ), 
+                        ( 1, &p.get_name() ), 
+                        ( 2, &model_for_combo ), 
+                        ( 3, &p.get_options()[ p.get_default_index() ] )
+                    ]);
             }
 
             view_list.set_model(Some(&model_list_of_data));
@@ -813,10 +817,27 @@ fn print_sources() {
 use gtk::TreePath;
 use crate::glib::Value;
 
+fn update_param_row(list: &ListStore, param_row:i32, param_value:i32) {
+    //if param_row > -1 && param_row < 23 { //this is already guarded by whether the row_iter exists
+        let row_path = TreePath::from_indices(&[param_row]);
+        if let Some(row_iter) = list.iter(&row_path) {
+
+            if let Ok(combo_liststore) = list.get_value(&row_iter, 2).get::<ListStore>() {
+                let combo_path = TreePath::from_indices(&[param_value]);
+                if let Some(combo_iter) = combo_liststore.iter(&combo_path) {
+                    if let Ok(combo_value) = combo_liststore.get_value(&combo_iter, 0).get::<Value>() {
+                        list.set_value(&row_iter, 3, &combo_value );
+                    }
+                }
+            }
+        }
+    //}
+}
+
 fn check_for_new_message() {
-    GLOBAL.with(|global| {
+    GLOBAL_RX.with(|global| {
         println!("here5");
-        if let Some((a, rx)) = &*global.borrow() {
+        if let Some(rx) = &*global.borrow() {
             let received: Vec<u8> = rx.recv().unwrap();
             //ui.main_buffer.set_text(&received);
             //
@@ -829,22 +850,7 @@ fn check_for_new_message() {
                     let param_row:i32 = 1;
                     let param_value:i32 = 9;
 
-                    if param_row > -1 && param_row < 23 {
-                        let path = TreePath::from_indices(&[param_row]);
-                        if let Some(iter) = list.iter(&path) {
-
-                            if let Ok(combo_model) = list.get_value(&iter, 2).get::<ListStore>() {
-                                let combo_path = TreePath::from_indices(&[param_value]);
-                                if let Some(combo_selected_iter) = combo_model.iter(&combo_path) {
-                                    if let Ok(combo_selected_value) = combo_model.get_value(&combo_selected_iter, 0).get::<Value>() {
-                                        //let value = combo_model.get_value(&combo_selected_ite0, 3, &combo_selected_value.to_value() ); 
-
-                                        list.set_value(&iter, 3, &combo_selected_value );
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    update_param_row(list, param_row, param_value);
                 }
             });
         }

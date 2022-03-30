@@ -154,7 +154,7 @@ checksum = "1a7847ca018a67204508b77cb9e6de670125075f7464fff5f673023378fa34f5"
 dependencies = [
  "core-foundation 0.9.3",
  "core-foundation-sys 0.8.3",
- "coremidi-sys 3.0.1",
+ "coremidi-sys 3.1.0",
 ]
 
 [[package]]
@@ -168,9 +168,9 @@ dependencies = [
 
 [[package]]
 name = "coremidi-sys"
-version = "3.0.1"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b49674d86f634be42bba110d6b2fa0b047bd5a2bbd02fcba776b56030899f20d"
+checksum = "79a6deed0c97b2d40abbab77e4c97f81d71e162600423382c277dd640019116c"
 dependencies = [
  "core-foundation-sys 0.8.3",
 ]
