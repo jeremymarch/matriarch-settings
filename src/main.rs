@@ -108,6 +108,10 @@ struct UiModel {
 use midir::{MidiInput, Ignore};
 //use std::env;
 
+thread_local!(
+    static GLOBAL: RefCell<Option<(Option<ListStore>, mpsc::Receiver<Vec<u8>>)>> = RefCell::new(None);
+);
+
 fn main() {
     let application = Application::builder()
         .application_id("com.philolog.matriarch-settings")
@@ -504,7 +508,10 @@ fn main() {
         }
     }
     */
-    
+    let (tx, rx) = mpsc::channel();
+    GLOBAL.with(|global| {
+        *global.borrow_mut() = Some((None, rx));
+    });
 
     application.connect_activate(move |app| {
         
@@ -636,11 +643,6 @@ fn main() {
             .content(&vbox)
             .build();
         window.show();
-
-        let (tx, rx) = mpsc::channel();
-        GLOBAL.with(|global| {
-            *global.borrow_mut() = Some((model_list_of_data, rx, tx));
-        });
     });
 
     let mut input = String::new();
@@ -685,13 +687,13 @@ fn main() {
         println!("here3");
         // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
         //let log_all_bytes:Vec<Vec<u8>> = Vec::new();
-        _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _| {
+        _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
             println!("here4");
             println!("{}: {:?} (len = {})", stamp, message, message.len());
 
-            GLOBAL.with(|global| {
+            //GLOBAL.with(|global| {
                 println!("here6");
-                if let Some((model_list_of_data, rx, tx)) = &*global.borrow() {
+                //if let Some((model_list_of_data, rx, tx)) = &*global.borrow() {
                     println!("here7");
                     //log.push(message.to_vec());
                     tx.send(message.to_vec()).unwrap();
@@ -700,10 +702,10 @@ fn main() {
                         check_for_new_message();
                         return glib::source::Continue(false);
                     });
-                }
-            });
+                //}
+            //});
 
-        }, ()).unwrap();
+        }, tx).unwrap();
     }
     
     /* 
@@ -758,9 +760,6 @@ fn main() {
     
 }
 
-thread_local!(
-    static GLOBAL: RefCell<Option<(ListStore, mpsc::Receiver<Vec<u8>>, mpsc::Sender<Vec<u8>>)>> = RefCell::new(None);
-);
 /*
 fn get_source_index() -> usize {
     let mut args_iter = env::args();
@@ -807,7 +806,7 @@ fn print_sources() {
 fn check_for_new_message() {
     GLOBAL.with(|global| {
         println!("here5");
-        if let Some((model_list_of_data, rx, tx)) = &*global.borrow() {
+        if let Some((None, rx)) = &*global.borrow() {
             let received: Vec<u8> = rx.recv().unwrap();
             //ui.main_buffer.set_text(&received);
             //model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() );
