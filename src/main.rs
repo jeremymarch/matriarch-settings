@@ -110,6 +110,8 @@ use midir::{MidiInput, Ignore};
 
 thread_local!(
     static GLOBAL: RefCell<Option<(Option<ListStore>, mpsc::Receiver<Vec<u8>>)>> = RefCell::new(None);
+
+    static GLOBAL_LISTSTORE: RefCell<Option<ListStore>> = RefCell::new(None);
 );
 
 fn main() {
@@ -538,6 +540,8 @@ fn main() {
             let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
             let model_list_of_data = ListStore::new(types_inside_columns);
 
+
+
             for p in &params {
                 let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
                 for o in &p.get_options() {
@@ -643,6 +647,10 @@ fn main() {
             .content(&vbox)
             .build();
         window.show();
+
+        GLOBAL_LISTSTORE.with(|global| {
+            *global.borrow_mut() = Some(model_list_of_data);
+        });
     });
 
     let mut input = String::new();
@@ -806,11 +814,18 @@ fn print_sources() {
 fn check_for_new_message() {
     GLOBAL.with(|global| {
         println!("here5");
-        if let Some((None, rx)) = &*global.borrow() {
+        if let Some((a, rx)) = &*global.borrow() {
             let received: Vec<u8> = rx.recv().unwrap();
             //ui.main_buffer.set_text(&received);
-            //model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() );
+            //
             println!("data: {:?}", received);
+
+            GLOBAL_LISTSTORE.with(|global| {
+                if let Some(list) = &*global.borrow() {
+                    println!("blah {:?}", list);
+                    //model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() );
+                }
+            });
         }
     });
 }
