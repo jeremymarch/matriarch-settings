@@ -811,6 +811,7 @@ fn print_sources() {
 }
 */
 use gtk::TreePath;
+use crate::glib::Value;
 
 fn check_for_new_message() {
     GLOBAL.with(|global| {
@@ -825,9 +826,24 @@ fn check_for_new_message() {
                 if let Some(list) = &*global.borrow() {
                     println!("blah {:?}", list);
 
-                    let path = TreePath::from_indices(&[1]);
-                    if let Some(iter) = list.iter(&path) {
-                        list.set_value(&iter, 3, &"blahblah".to_value() );
+                    let param_row:i32 = 1;
+                    let param_value:i32 = 9;
+
+                    if param_row > -1 && param_row < 23 {
+                        let path = TreePath::from_indices(&[param_row]);
+                        if let Some(iter) = list.iter(&path) {
+
+                            if let Ok(combo_model) = list.get_value(&iter, 2).get::<ListStore>() {
+                                let combo_path = TreePath::from_indices(&[param_value]);
+                                if let Some(combo_selected_iter) = combo_model.iter(&combo_path) {
+                                    if let Ok(combo_selected_value) = combo_model.get_value(&combo_selected_iter, 0).get::<Value>() {
+                                        //let value = combo_model.get_value(&combo_selected_ite0, 3, &combo_selected_value.to_value() ); 
+
+                                        list.set_value(&iter, 3, &combo_selected_value );
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             });
