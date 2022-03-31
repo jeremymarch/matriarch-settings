@@ -113,6 +113,8 @@ thread_local!(
     static GLOBAL_RX: RefCell<Option<mpsc::Receiver<Vec<u8>>>> = RefCell::new(None);
 
     static GLOBAL_LISTSTORE: RefCell<Option<ListStore>> = RefCell::new(None);
+
+    static GLOBAL_MIDI_OUT: RefCell<Option<MidiOutputConnection>> = RefCell::new(None);
 );
 
 const MAX_PARAM: usize = 23;
@@ -491,7 +493,7 @@ fn main() {
                             let param_id = list_path.indices()[0];
                             let param_index = combo_model.path(combo_selected_iter).indices()[0];
 
-                            param_changed(param_id, param_index, &combo_selected_value.to_string());
+                            param_changed(param_id.try_into().unwrap(), param_index, &combo_selected_value.to_string());
                         }
                     }
                 }
@@ -588,6 +590,10 @@ fn main() {
                 Err(_e) => panic!("error reading param"),
             }
         }
+
+        GLOBAL_MIDI_OUT.with(|global| {
+            *global.borrow_mut() = Some(conn_out);
+        });
     }
 
     application.run();
@@ -640,6 +646,39 @@ fn check_for_new_message() {
     });
 }
 
+fn param_changed(id: u8, param_index: i32, value: &str) {
+    println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
+    /*
+    GLOBAL_MIDI_OUT.with(|global| {
+        if let Some(&mut conn_out) = &*global.borrow_mut() {
+            set_param(&mut conn_out, id, param_index);
+        }
+    });
+    */
+}
+
+fn set_param(conn_out: &mut MidiOutputConnection, param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
+    let mut msb = 0;
+    let mut lsb = value;
+    if value > 128 { 
+        msb = value / 128; 
+        lsb = value % 128; 
+    }
+    let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+    conn_out.send(&msg)?;
+
+    Ok(())
+}
+
+fn read_param(conn_out: &mut MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
+    let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+    println!("Sending read request for Parameter {}",  param_id);
+    sleep(Duration::from_millis(200));
+    conn_out.send(&msg)?;
+
+    Ok(())
+}
+
 fn load_css() {
     // Load the CSS file and add it to the provider
     let provider = CssProvider::new();
@@ -653,6 +692,7 @@ fn load_css() {
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 }
+
 /* 
 //coremidi
 fn get_sources() -> Vec<String> {
@@ -666,37 +706,3 @@ fn get_sources() -> Vec<String> {
     v
 }
 */
-fn param_changed(id: i32, param_index: i32, value: &str) {
-    println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
-    set_param(id, param_index);
-}
-
-fn set_param(param_id: i32, value: i32) {
-    let mut msb = 0;
-    let mut lsb = value;
-    if value > 128 { 
-        //msb = parseInt(value / 128); 
-        lsb = value % 128; 
-    }
-    let msg:Vec<i32> = vec![0xf0, 0x04, 0x17, 0x23, param_id, msb, lsb, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-    //midi_out.send(msg);
-}
-
-/* 
-function set_param(param_id, value) {
-    let msb = 0;
-    let lsb = value;
-    if(value > 128) { msb = parseInt(value / 128); lsb = value % 128; }
-    let msg = [0xf0, 0x04, 0x17, 0x23, param_id, msb, lsb, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7]
-    midi_out.send(msg);
-}
-*/
-
-fn read_param(conn_out: &mut MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
-    let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-    println!("Sending read request for Parameter {}",  param_id);
-    sleep(Duration::from_millis(200));
-    conn_out.send(&msg)?;
-
-    Ok(())
-}
