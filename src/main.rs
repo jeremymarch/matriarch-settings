@@ -70,15 +70,14 @@ trait GenericOptions {
 impl GenericOptions for ParamRangeOption {
     fn get_options(&self) -> Vec<String> {
         let mut v = Vec::new();
-        let mut idx:usize = 0;
-        for i in self.min..=self.max {
+
+        for (idx, i) in (self.min..=self.max).enumerate() {
             if idx == self.default_index {
                 v.push(format!("{}{}{} (Default{})", self.prefix, i, self.suffix, self.default_mesg));
             }
             else {
                 v.push(format!("{}{}{}", self.prefix, i, self.suffix));
             }
-            idx += 1;
         }
         v
     }
@@ -96,7 +95,7 @@ impl GenericOptions for ParamRangeOption {
 impl GenericOptions for ParamListOption {
     fn get_options(&self) -> Vec<String> {
         let a = self.options.to_owned();
-        a.into_iter().enumerate().map(|(idx, r)| { if idx == self.default_index { format!("{} (Default{})", r, self.default_mesg) } else { r.to_owned() } }).collect::<Vec<String>>()
+        a.into_iter().enumerate().map(|(idx, r)| { if idx == self.default_index { format!("{} (Default{})", r, self.default_mesg) } else { r } }).collect::<Vec<String>>()
     }
     fn get_name(&self) -> String {
         self.name.to_owned()
@@ -487,13 +486,13 @@ fn main() {
             object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data => move |_cell, list_path, combo_selected_iter| { 
                 if let Some(list_iter) = model_list_of_data.iter(&list_path) {
                     if let Ok(combo_model) = model_list_of_data.get_value(&list_iter, 2).get::<ListStore>() {
-                        if let Ok(combo_selected_value) = combo_model.get_value(&combo_selected_iter, 0).get::<String>() {
+                        if let Ok(combo_selected_value) = combo_model.get_value(combo_selected_iter, 0).get::<String>() {
                             model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
 
                             let param_id = list_path.indices()[0];
                             let param_index = combo_model.path(combo_selected_iter).indices()[0];
 
-                            param_changed(param_id.try_into().unwrap(), param_index, &combo_selected_value.to_string());
+                            param_changed(param_id.try_into().unwrap(), param_index, &combo_selected_value);
                         }
                     }
                 }
@@ -561,7 +560,7 @@ fn main() {
     let in_ports = midi_in.ports();
 
     let _conn_in; //declare here for scope
-    if in_ports.len() > 0 {
+    if !in_ports.is_empty() {
         let in_port = &in_ports[0];
 
         _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
@@ -571,7 +570,7 @@ fn main() {
             
             glib::source::idle_add(|| { // tell ui thread to read from channel
                 check_for_new_message();
-                return glib::source::Continue(false);
+                glib::source::Continue(false)
             });
 
         }, tx).unwrap();
@@ -580,8 +579,8 @@ fn main() {
     let midi_out = MidiOutput::new("Matriarch Settings Output").unwrap();
     let out_ports = midi_out.ports();
     if let Some(new_port) = out_ports.last() {
-        println!("Connecting to port '{}' ...", midi_out.port_name(&new_port).unwrap());
-        let mut conn_out = midi_out.connect(&new_port, "Matriarch Settings Output Connection").unwrap();
+        println!("Connecting to port '{}' ...", midi_out.port_name(new_port).unwrap());
+        let mut conn_out = midi_out.connect(new_port, "Matriarch Settings Output Connection").unwrap();
 
         for p in 0..MAX_PARAM {
             sleep(Duration::from_millis(200));
@@ -626,7 +625,7 @@ fn check_for_new_message() {
             //
             println!("passed message: {:?}", received);
 
-            if received.len() > 0 && received.len() >= 7 && received[0] == 0xF0 && received[received.len() - 1] == 0xF7 { //if sysex
+            if !received.is_empty() && received.len() >= 7 && received[0] == 0xF0 && received[received.len() - 1] == 0xF7 { //if sysex
                 let param_row = received[4];
         
                 let msb = received[5];
