@@ -14,6 +14,17 @@
 //https://stackoverflow.com/questions/53216593/vec-of-generics-of-different-concrete-types
 //https://github.com/rust-lang/rfcs/pull/2289 is needed to have generic struct member
 
+/*
+set up new mpsc to send from connect_changed to function
+use mutex
+figure out problem with thread_local
+*/
+
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::rc::Rc;
+use crate::glib::clone;
+
 use gtk::prelude::*;
 use gtk::{Application};
 use gtk::TreeView;
@@ -25,6 +36,7 @@ use gtk::TreePath;
 use crate::glib::Value;
 use gtk::StyleContext;
 use gtk::gdk::Display;
+use gtk::Label;
 //use adw::prelude::*;
 use std::cell::RefCell;
 use std::sync::mpsc;
@@ -108,10 +120,16 @@ impl GenericOptions for ParamListOption {
     }
 }
 
+struct UIModel {
+    list_store:ListStore,
+    label:Label,
+    combocell:gtk::CellRendererCombo,
+}
+
 thread_local!(
     static GLOBAL_RX: RefCell<Option<mpsc::Receiver<Vec<u8>>>> = RefCell::new(None);
 
-    static GLOBAL_LISTSTORE: RefCell<Option<ListStore>> = RefCell::new(None);
+    static GLOBAL_LISTSTORE: RefCell<Option<UIModel>> = RefCell::new(None);
 
     static GLOBAL_MIDI_OUT: RefCell<Option<MidiOutputConnection>> = RefCell::new(None);
 );
@@ -119,6 +137,8 @@ thread_local!(
 const MAX_PARAM: usize = 23;
 
 fn main() {
+    let data = Arc::new(Mutex::new(0i32));
+    
     let application = Application::builder()
         .application_id("com.philolog.matriarch-settings")
         .build();
@@ -413,8 +433,24 @@ fn main() {
         *global.borrow_mut() = Some(rx);
     });
 
-    application.connect_activate(move |app| {
-        
+    let midi_out = MidiOutput::new("Matriarch Settings Output").unwrap();
+    let out_ports = midi_out.ports();
+    let mut conn_out: Option<MidiOutputConnection> = None;
+    if let Some(new_port) = out_ports.last() {
+        println!("Connecting to port '{}'...", midi_out.port_name(new_port).unwrap());
+        conn_out = Some(midi_out.connect(new_port, "Matriarch Settings Output Connection").unwrap());
+    }
+
+    GLOBAL_MIDI_OUT.with(|global| {
+        *global.borrow_mut() = conn_out;
+    });
+
+    //let change_param_closure = { }
+
+    //let mut x = Rc::new(RefCell::new(conn_out));
+
+    application.connect_activate(/*clone!(@weak x => */move |app| {
+            
         let button = gtk::Button::with_label("Connect");
         button.connect_clicked(|_| {
             eprintln!("Connect clicked!");
@@ -435,88 +471,91 @@ fn main() {
 
         let view_list = TreeView::new();
         
-            let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
-            let model_list_of_data = ListStore::new(types_inside_columns);
+        let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
+        let model_list_of_data = ListStore::new(types_inside_columns);
 
-            for p in &params {
-                let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
-                for o in &p.get_options() {
-                    model_for_combo.insert_with_values(None, &[(0, &o)]);
-                }
-                model_list_of_data.insert_with_values(None, 
-                    &[
-                        ( 0, &p.get_id() ), 
-                        ( 1, &p.get_name() ), 
-                        ( 2, &model_for_combo ), 
-                        ( 3, &p.get_options()[ p.get_default_index() ] )
-                    ]);
+        for p in &params {
+            let model_for_combo = ListStore::new(&[gtk::glib::Type::STRING]);
+            for o in &p.get_options() {
+                model_for_combo.insert_with_values(None, &[(0, &o)]);
             }
+            model_list_of_data.insert_with_values(None, 
+                &[
+                    ( 0, &p.get_id() ), 
+                    ( 1, &p.get_name() ), 
+                    ( 2, &model_for_combo ), 
+                    ( 3, &p.get_options()[ p.get_default_index() ] )
+                ]);
+        }
 
-            view_list.set_model(Some(&model_list_of_data));
+        view_list.set_model(Some(&model_list_of_data));
 
-            // first column
-            let object_to_render_cells: gtk::CellRendererText = gtk::CellRendererText::new();
-            object_to_render_cells.set_visible(true);
-            let view_column = TreeViewColumn::new();
-            view_column.set_expand(false);
-            view_column.set_visible(true);
-            view_column.set_title("ID");
-            view_column.pack_start(&object_to_render_cells, true);
-            view_column.add_attribute(&object_to_render_cells, "text", 0);
-            view_list.append_column(&view_column);
+        // first column
+        let object_to_render_cells: gtk::CellRendererText = gtk::CellRendererText::new();
+        object_to_render_cells.set_visible(true);
+        let view_column = TreeViewColumn::new();
+        view_column.set_expand(false);
+        view_column.set_visible(true);
+        view_column.set_title("ID");
+        view_column.pack_start(&object_to_render_cells, true);
+        view_column.add_attribute(&object_to_render_cells, "text", 0);
+        view_list.append_column(&view_column);
 
-            // second column
-            let object_to_render_cells_2: gtk::CellRendererText = gtk::CellRendererText::new();
-            object_to_render_cells_2.set_visible(true);
-            let view_column_2 = TreeViewColumn::new();
-            view_column_2.set_expand(true);
-            view_column_2.set_visible(true);
-            view_column_2.set_title("Name");
-            view_column_2.pack_start(&object_to_render_cells, true);
-            view_column_2.add_attribute(&object_to_render_cells, "text", 1);
-            view_list.append_column(&view_column_2);
+        // second column
+        let object_to_render_cells_2: gtk::CellRendererText = gtk::CellRendererText::new();
+        object_to_render_cells_2.set_visible(true);
+        let view_column_2 = TreeViewColumn::new();
+        view_column_2.set_expand(true);
+        view_column_2.set_visible(true);
+        view_column_2.set_title("Name");
+        view_column_2.pack_start(&object_to_render_cells, true);
+        view_column_2.add_attribute(&object_to_render_cells, "text", 1);
+        view_list.append_column(&view_column_2);
 
-            // third column
-            let object_to_render_cells_3: gtk::CellRendererCombo = gtk::CellRendererCombo::new();
-            object_to_render_cells_3.set_visible(true);
-            object_to_render_cells_3.set_editable(true);
-            object_to_render_cells_3.set_has_entry(false); //whether it also has a text entry besides the combo options
+        // third column
+        let object_to_render_cells_3: gtk::CellRendererCombo = gtk::CellRendererCombo::new();
+        object_to_render_cells_3.set_visible(true);
+        object_to_render_cells_3.set_editable(true);
+        object_to_render_cells_3.set_has_entry(false); //whether it also has a text entry besides the combo options
 
-            // set column 3 of list model to selected value from combo so that it will be displayed once selected
-            object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data => move |_cell, list_path, combo_selected_iter| { 
-                if let Some(list_iter) = model_list_of_data.iter(&list_path) {
-                    if let Ok(combo_model) = model_list_of_data.get_value(&list_iter, 2).get::<ListStore>() {
-                        if let Ok(combo_selected_value) = combo_model.get_value(combo_selected_iter, 0).get::<String>() {
-                            model_list_of_data.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
+        // set column 3 of list model to selected value from combo so that it will be displayed once selected
+        object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data as l => move |_cell, list_path, combo_selected_iter| { 
+            println!("changed 3");
+            if let Some(list_iter) = l.iter(&list_path) {
+                println!("changed 4");
+                if let Ok(combo_model) = l.get_value(&list_iter, 2).get::<ListStore>() {
+                    if let Ok(combo_selected_value) = combo_model.get_value(combo_selected_iter, 0).get::<String>() {
+                        l.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
 
-                            let param_id = list_path.indices()[0];
-                            let param_index = combo_model.path(combo_selected_iter).indices()[0];
-
-                            param_changed(param_id.try_into().unwrap(), param_index, &combo_selected_value);
-                        }
+                        let param_id = list_path.indices()[0];
+                        let param_index = combo_model.path(combo_selected_iter).indices()[0];
+                        //if let Some(ref mut xx) = conn_out {
+                            param_changed(/*x.clone(), */param_id.try_into().unwrap(), param_index, &combo_selected_value);
+                        //}
                     }
                 }
-            } ) );
-            // use the combo model for the options
-            // object_to_render_cells_3.set_model(Some(&model_for_combo)); //only set model here if same model for each row
-            // display the options of the first column in the combo model
-            object_to_render_cells_3.set_text_column(0);
+            }
+        } ) );
 
-            let view_column_3 = TreeViewColumn::new();
-            view_column_3.set_expand(true);
-            view_column_3.set_visible(true);
-            view_column_3.set_title("Value");
-            view_column_3.pack_start(&object_to_render_cells_3, true);
+        // use the combo model for the options
+        // object_to_render_cells_3.set_model(Some(&model_for_combo)); //only set model here if same model for each row
+        // display the options of the first column in the combo model
+        object_to_render_cells_3.set_text_column(0);
 
-            // set model and text for where to get the selected value (column 3)
-            // the combo data for each row is in the second column in the tree model
-            view_column_3.add_attribute(&object_to_render_cells_3, "model", 2);
-            // set selected value here in "changed" signal to display it
-            view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); 
+        let view_column_3 = TreeViewColumn::new();
+        view_column_3.set_expand(true);
+        view_column_3.set_visible(true);
+        view_column_3.set_title("Value");
+        view_column_3.pack_start(&object_to_render_cells_3, true);
 
-            view_list.append_column(&view_column_3);
+        // set model and text for where to get the selected value (column 3)
+        // the combo data for each row is in the second column in the tree model
+        view_column_3.add_attribute(&object_to_render_cells_3, "model", 2);
+        // set selected value here in "changed" signal to display it
+        view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); 
+
+        view_list.append_column(&view_column_3);
         
-
         view_list.expand_all();
 
         let scrolled_window = gtk::ScrolledWindow::builder()
@@ -541,6 +580,14 @@ fn main() {
         vbox.append(&hbox);
         vbox.append(&scrolled_window);
 
+        let entry = gtk::Label::new(Some("Blah blah blah 0xF0 0x00 0xF7"));
+        entry.set_xalign(0.0);
+        vbox.append(&entry);
+
+        GLOBAL_LISTSTORE.with(|global| {
+            *global.borrow_mut() = Some(UIModel {list_store:model_list_of_data, label:entry, combocell:object_to_render_cells_3});
+        });
+
         let window = ApplicationWindow::builder()
             .application(app)
             .title("Moog Matriarch Global Settings")
@@ -550,10 +597,8 @@ fn main() {
             .build();
         window.show();
 
-        GLOBAL_LISTSTORE.with(|global| {
-            *global.borrow_mut() = Some(model_list_of_data);
-        });
-    });
+
+    })/* )*/;
     
     let mut midi_in = MidiInput::new("midir reading input").unwrap();
     midi_in.ignore(Ignore::None);
@@ -575,26 +620,17 @@ fn main() {
 
         }, tx).unwrap();
     }
-
-    let midi_out = MidiOutput::new("Matriarch Settings Output").unwrap();
-    let out_ports = midi_out.ports();
-    if let Some(new_port) = out_ports.last() {
-        println!("Connecting to port '{}' ...", midi_out.port_name(new_port).unwrap());
-        let mut conn_out = midi_out.connect(new_port, "Matriarch Settings Output Connection").unwrap();
-
+/* 
+    if let Some(ref mut xx) = conn_out {
         for p in 0..MAX_PARAM {
             sleep(Duration::from_millis(200));
-            match read_param(&mut conn_out, p.try_into().unwrap() ) {
+            match read_param(xx, p.try_into().unwrap() ) {
                 Ok(_a) => (),
                 Err(_e) => panic!("error reading param"),
             }
         }
-
-        GLOBAL_MIDI_OUT.with(|global| {
-            *global.borrow_mut() = Some(conn_out);
-        });
     }
-
+*/
     application.run();
 }
 
@@ -625,46 +661,48 @@ fn check_for_new_message() {
             //
             println!("passed message: {:?}", received);
 
-            if !received.is_empty() && received.len() >= 7 && received[0] == 0xF0 && received[received.len() - 1] == 0xF7 { //if sysex
-                let param_row = received[4];
+            GLOBAL_LISTSTORE.with(|global| {
+                if let Some(uimodel) = &*global.borrow() {
+                    uimodel.label.set_text(&format!("Received: {:?}", received));
+
+                    if !received.is_empty() && received.len() >= 7 && received[0] == 0xF0 && received[received.len() - 1] == 0xF7 { //if sysex
+                        let param_row = received[4];
+                
+                        let msb = received[5];
+                        let lsb = received[6];
+                        let param_value = 128 * msb + lsb;
         
-                let msb = received[5];
-                let lsb = received[6];
-                let param_value = 128 * msb + lsb;
-
-                //let param_row:i32 = 1;
-                //let param_value:i32 = 9;
-
-                GLOBAL_LISTSTORE.with(|global| {
-                    if let Some(list) = &*global.borrow() {
-                        update_param_row(list, param_row.into(), param_value.into());
+                        //let param_row:i32 = 1;
+                        //let param_value:i32 = 9;
+                        update_param_row(&uimodel.list_store, param_row.into(), param_value.into());
                     }
-                });
-            }
+                }
+            });
+            
         }
     });
 }
 
-fn param_changed(id: u8, param_index: i32, value: &str) {
+fn param_changed(/*conn_out: Rc<RefCell<std::option::Option<MidiOutputConnection>>>, */id: u8, param_index: i32, value: &str) {
     println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
-    /*
-    GLOBAL_MIDI_OUT.with(|global| {
-        if let Some(&mut conn_out) = &*global.borrow_mut() {
-            set_param(&mut conn_out, id, param_index);
-        }
-    });
-    */
+    set_param(/*&mut conn_out.get_mut().unwrap(), */id, param_index);
 }
 
-fn set_param(conn_out: &mut MidiOutputConnection, param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
-    let mut msb = 0;
-    let mut lsb = value;
-    if value > 128 { 
-        msb = value / 128; 
-        lsb = value % 128; 
-    }
-    let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-    conn_out.send(&msg)?;
+fn set_param(/*conn_out: &mut MidiOutputConnection, */param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
+    GLOBAL_MIDI_OUT.with(|global| {
+        //println!("checking for message...");
+        if global.borrow_mut().is_some() {
+
+            let mut msb = 0;
+            let mut lsb = value;
+            if value > 128 { 
+                msb = value / 128; 
+                lsb = value % 128; 
+            }
+            let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+            global.borrow_mut().unwrap().send(&msg);
+        }
+    });
 
     Ok(())
 }
