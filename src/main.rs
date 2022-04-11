@@ -123,7 +123,6 @@ impl GenericOptions for ParamListOption {
 struct UIModel {
     list_store:ListStore,
     label:Label,
-    combocell:gtk::CellRendererCombo,
 }
 
 thread_local!(
@@ -131,13 +130,12 @@ thread_local!(
 
     static GLOBAL_LISTSTORE: RefCell<Option<UIModel>> = RefCell::new(None);
 
-    static GLOBAL_MIDI_OUT: RefCell<Option<MidiOutputConnection>> = RefCell::new(None);
+    static GLOBAL_MIDI_OUT: RefCell<Option<&'static mut MidiOutputConnection>> = RefCell::new(None);
 );
 
 const MAX_PARAM: usize = 23;
 
 fn main() {
-    let data = Arc::new(Mutex::new(0i32));
     
     let application = Application::builder()
         .application_id("com.philolog.matriarch-settings")
@@ -428,6 +426,8 @@ fn main() {
         }
     }
     */
+    //let data = Arc::new(Mutex::new(0i32));
+
     let (tx, rx) = mpsc::channel();
     GLOBAL_RX.with(|global| {
         *global.borrow_mut() = Some(rx);
@@ -435,21 +435,27 @@ fn main() {
 
     let midi_out = MidiOutput::new("Matriarch Settings Output").unwrap();
     let out_ports = midi_out.ports();
-    let mut conn_out: Option<MidiOutputConnection> = None;
+    //let mut conn_out: Option<MidiOutputConnection> = None;
+    let conn_out;// = Rc::new(RefCell::new(Option<MidiOutputConnection>));
     if let Some(new_port) = out_ports.last() {
         println!("Connecting to port '{}'...", midi_out.port_name(new_port).unwrap());
-        conn_out = Some(midi_out.connect(new_port, "Matriarch Settings Output Connection").unwrap());
+        conn_out = Rc::new(RefCell::new(Some(midi_out.connect(new_port, "Matriarch Settings Output Connection").unwrap())));
     }
-
+    else {
+        conn_out = Rc::new(RefCell::new(None));
+    }
+/* 
     GLOBAL_MIDI_OUT.with(|global| {
-        *global.borrow_mut() = conn_out;
+        *global.borrow_mut() = &mut conn_out;
     });
-
+*/
     //let change_param_closure = { }
 
     //let mut x = Rc::new(RefCell::new(conn_out));
 
-    application.connect_activate(/*clone!(@weak x => */move |app| {
+    let clos = { };
+
+    application.connect_activate(clone!(@weak conn_out => move |app| {
             
         let button = gtk::Button::with_label("Connect");
         button.connect_clicked(|_| {
@@ -519,7 +525,7 @@ fn main() {
         object_to_render_cells_3.set_has_entry(false); //whether it also has a text entry besides the combo options
 
         // set column 3 of list model to selected value from combo so that it will be displayed once selected
-        object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data as l => move |_cell, list_path, combo_selected_iter| { 
+        object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move |_cell, list_path, combo_selected_iter| { 
             println!("changed 3");
             if let Some(list_iter) = l.iter(&list_path) {
                 println!("changed 4");
@@ -530,7 +536,7 @@ fn main() {
                         let param_id = list_path.indices()[0];
                         let param_index = combo_model.path(combo_selected_iter).indices()[0];
                         //if let Some(ref mut xx) = conn_out {
-                            param_changed(/*x.clone(), */param_id.try_into().unwrap(), param_index, &combo_selected_value);
+                            param_changed(conn_out, param_id.try_into().unwrap(), param_index, &combo_selected_value);
                         //}
                     }
                 }
@@ -580,12 +586,18 @@ fn main() {
         vbox.append(&hbox);
         vbox.append(&scrolled_window);
 
-        let entry = gtk::Label::new(Some("Blah blah blah 0xF0 0x00 0xF7"));
-        entry.set_xalign(0.0);
-        vbox.append(&entry);
+        let midi_received_label = gtk::Label::new(Some(""));
+        //entry.set_xalign(0.0);
+        midi_received_label.set_halign(gtk::Align::End);
+        //entry.set_justify(gtk::Justification::Right);
+        midi_received_label.set_margin_top(2);
+        midi_received_label.set_margin_bottom(4);
+        midi_received_label.set_margin_start(8);
+        midi_received_label.set_margin_end(8);
+        vbox.append(&midi_received_label);
 
         GLOBAL_LISTSTORE.with(|global| {
-            *global.borrow_mut() = Some(UIModel {list_store:model_list_of_data, label:entry, combocell:object_to_render_cells_3});
+            *global.borrow_mut() = Some(UIModel {list_store:model_list_of_data, label:midi_received_label});
         });
 
         let window = ApplicationWindow::builder()
@@ -598,10 +610,25 @@ fn main() {
         window.show();
 
 
-    })/* )*/;
+    }));
     
     let mut midi_in = MidiInput::new("midir reading input").unwrap();
     midi_in.ignore(Ignore::None);
+
+    println!("Available input ports:");
+    for (i, p) in midi_in.ports().iter().enumerate() {
+        if let Ok(port) = midi_in.port_name(p) {
+            println!("{}: {}", i, port);
+        }
+    }
+/* 
+    println!("\nAvailable output ports:");
+    for (i, p) in midi_out.ports().iter().enumerate() {
+        if let Ok(port) = midi_out.port_name(p) {
+            println!("{}: {}", i, port);
+        }
+    }
+*/
     let in_ports = midi_in.ports();
 
     let _conn_in; //declare here for scope
@@ -620,7 +647,7 @@ fn main() {
 
         }, tx).unwrap();
     }
-/* 
+    /* 
     if let Some(ref mut xx) = conn_out {
         for p in 0..MAX_PARAM {
             sleep(Duration::from_millis(200));
@@ -630,7 +657,7 @@ fn main() {
             }
         }
     }
-*/
+    */
     application.run();
 }
 
@@ -683,15 +710,15 @@ fn check_for_new_message() {
     });
 }
 
-fn param_changed(/*conn_out: Rc<RefCell<std::option::Option<MidiOutputConnection>>>, */id: u8, param_index: i32, value: &str) {
+fn param_changed(conn_out: Rc<RefCell<std::option::Option<MidiOutputConnection>>>, id: u8, param_index: i32, value: &str) {
     println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
-    set_param(/*&mut conn_out.get_mut().unwrap(), */id, param_index);
+    set_param(conn_out, id, param_index);
 }
 
-fn set_param(/*conn_out: &mut MidiOutputConnection, */param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
-    GLOBAL_MIDI_OUT.with(|global| {
+fn set_param(conn_out: Rc<RefCell<std::option::Option<MidiOutputConnection>>>, param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
+    //GLOBAL_MIDI_OUT.with(|global| {
         //println!("checking for message...");
-        if global.borrow_mut().is_some() {
+        //if global.borrow_mut().is_some() {
 
             let mut msb = 0;
             let mut lsb = value;
@@ -700,9 +727,12 @@ fn set_param(/*conn_out: &mut MidiOutputConnection, */param_id: u8, value: i32) 
                 lsb = value % 128; 
             }
             let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-            global.borrow_mut().unwrap().send(&msg);
-        }
-    });
+            if let Some(a) = &mut *conn_out.borrow_mut() {
+                println!("Sending {:?}", msg);
+                a.send(&msg);
+            }
+       // }
+    //});
 
     Ok(())
 }
@@ -710,7 +740,7 @@ fn set_param(/*conn_out: &mut MidiOutputConnection, */param_id: u8, value: i32) 
 fn read_param(conn_out: &mut MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
     let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
     println!("Sending read request for Parameter {}",  param_id);
-    sleep(Duration::from_millis(200));
+    //sleep(Duration::from_millis(200));
     conn_out.send(&msg)?;
 
     Ok(())
