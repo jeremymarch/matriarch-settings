@@ -705,43 +705,35 @@ fn param_changed(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, id: u8, pa
         if let Some(uimodel) = &*global.borrow() {
             uimodel.label.set_text(&format!("")); //clear
             match set_param(conn_out, id, param_index) {
-                Ok(e) => {
-                    uimodel.label.set_text(&format!("Sent: "));
+                Ok(msg) => {
+                    uimodel.label.set_text(&format!("Set param: {:?}", msg));
                 },
                 Err(e) => {
-                    println!("Error changing param");
+                    println!("Error setting param: {:?}", e);
                 }
             }
         }
     });
 }
 
-fn set_param(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
-    //GLOBAL_MIDI_OUT.with(|global| {
-        //println!("checking for message...");
-        //if global.borrow_mut().is_some() {
-
-            let mut msb = 0;
-            let mut lsb = value;
-            if value > 128 { 
-                msb = value / 128; 
-                lsb = value % 128; 
-            }
-            let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-            if let Some(out) = &mut *conn_out.borrow_mut() {
-
-                println!("Sending {:?}", msg);
-                out.send(&msg)?;
-            }
-       // }
-    //});
-
-    Ok(())
+fn set_param(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, param_id: u8, value: i32) -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut msb = 0;
+    let mut lsb = value;
+    if value > 128 { 
+        msb = value / 128; 
+        lsb = value % 128; 
+    }
+    let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+    if let Some(out) = &mut *conn_out.borrow_mut() {
+        println!("Sending set param: {:?}", msg);
+        out.send(&msg)?;
+    }
+    Ok(msg.to_vec())
 }
 
 fn read_param(conn_out: &mut MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
     let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-    println!("Sending read request for Parameter {}",  param_id);
+    println!("Request param: {}",  param_id);
     //sleep(Duration::from_millis(200));
     conn_out.send(&msg)?;
 
