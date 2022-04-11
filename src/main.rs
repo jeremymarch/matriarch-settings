@@ -647,17 +647,17 @@ fn main() {
 
         }, tx).unwrap();
     }
-    /* 
-    if let Some(ref mut xx) = conn_out {
+    
+    if let Some(a) = &mut *conn_out.borrow_mut() {
         for p in 0..MAX_PARAM {
             sleep(Duration::from_millis(200));
-            match read_param(xx, p.try_into().unwrap() ) {
+            match read_param(a, p.try_into().unwrap() ) {
                 Ok(_a) => (),
                 Err(_e) => panic!("error reading param"),
             }
         }
     }
-    */
+    
     application.run();
 }
 
