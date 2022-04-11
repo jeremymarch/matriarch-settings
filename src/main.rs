@@ -130,7 +130,7 @@ thread_local!(
 
     static GLOBAL_LISTSTORE: RefCell<Option<UIModel>> = RefCell::new(None);
 
-    static GLOBAL_MIDI_OUT: RefCell<Option<&'static mut MidiOutputConnection>> = RefCell::new(None);
+    //static GLOBAL_MIDI_OUT: RefCell<Option<&'static mut MidiOutputConnection>> = RefCell::new(None);
 );
 
 const MAX_PARAM: usize = 23;
@@ -436,24 +436,13 @@ fn main() {
     let midi_out = MidiOutput::new("Matriarch Settings Output").unwrap();
     let out_ports = midi_out.ports();
     //let mut conn_out: Option<MidiOutputConnection> = None;
-    let conn_out;// = Rc::new(RefCell::new(Option<MidiOutputConnection>));
+    let mut conn_out = Rc::new(RefCell::new(None)); //https://github.com/gtk-rs/examples/issues/115
     if let Some(new_port) = out_ports.last() {
         println!("Connecting to port '{}'...", midi_out.port_name(new_port).unwrap());
-        conn_out = Rc::new(RefCell::new(Some(midi_out.connect(new_port, "Matriarch Settings Output Connection").unwrap())));
+        if let Ok(out) = midi_out.connect(new_port, "Matriarch Settings Output Connection") {
+            conn_out = Rc::new(RefCell::new(Some(out)));
+        }
     }
-    else {
-        conn_out = Rc::new(RefCell::new(None));
-    }
-/* 
-    GLOBAL_MIDI_OUT.with(|global| {
-        *global.borrow_mut() = &mut conn_out;
-    });
-*/
-    //let change_param_closure = { }
-
-    //let mut x = Rc::new(RefCell::new(conn_out));
-
-    let clos = { };
 
     application.connect_activate(clone!(@weak conn_out => move |app| {
             
@@ -710,12 +699,24 @@ fn check_for_new_message() {
     });
 }
 
-fn param_changed(conn_out: Rc<RefCell<std::option::Option<MidiOutputConnection>>>, id: u8, param_index: i32, value: &str) {
+fn param_changed(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, id: u8, param_index: i32, value: &str) {
     println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
-    set_param(conn_out, id, param_index);
+    GLOBAL_LISTSTORE.with(|global| {
+        if let Some(uimodel) = &*global.borrow() {
+            uimodel.label.set_text(&format!("")); //clear
+            match set_param(conn_out, id, param_index) {
+                Ok(e) => {
+                    uimodel.label.set_text(&format!("Sent: "));
+                },
+                Err(e) => {
+                    println!("Error changing param");
+                }
+            }
+        }
+    });
 }
 
-fn set_param(conn_out: Rc<RefCell<std::option::Option<MidiOutputConnection>>>, param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
+fn set_param(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, param_id: u8, value: i32) -> Result<(), Box<dyn Error>> {
     //GLOBAL_MIDI_OUT.with(|global| {
         //println!("checking for message...");
         //if global.borrow_mut().is_some() {
@@ -727,9 +728,10 @@ fn set_param(conn_out: Rc<RefCell<std::option::Option<MidiOutputConnection>>>, p
                 lsb = value % 128; 
             }
             let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-            if let Some(a) = &mut *conn_out.borrow_mut() {
+            if let Some(out) = &mut *conn_out.borrow_mut() {
+
                 println!("Sending {:?}", msg);
-                a.send(&msg);
+                out.send(&msg)?;
             }
        // }
     //});
