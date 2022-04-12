@@ -466,6 +466,32 @@ fn main() {
         println!("{}", a);
     }
 
+    let in_ports = midi_in.ports();
+    let mut selected_port:Option<u32> = None;
+    let _conn_in; //declare here for scope
+    if !in_ports.is_empty() {
+        let sources = get_in_sources(&midi_in);
+        for (i, name) in sources.iter().enumerate() {
+            if name.to_lowercase().contains("matriarch") {
+                selected_port = Some(i as u32);
+                let in_port = &in_ports[i];
+
+                _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
+                    println!("received: {}: {:02X?} (len = {})", stamp, message, message.len());
+
+                    tx.send(message.to_vec()).unwrap();
+                    
+                    glib::source::idle_add(|| { // tell ui thread to read from channel
+                        check_for_new_message();
+                        glib::source::Continue(false)
+                    });
+
+                }, tx).unwrap();
+                break;
+            }
+        }
+    }
+
     application.connect_activate(clone!(@weak conn_out => move |app| {
             
         let button = gtk::Button::with_label("Connect");
@@ -482,7 +508,8 @@ fn main() {
                 combo.append_text(i);
             }
         }
-        combo.set_active(Some(0));
+
+        combo.set_active(selected_port);
         combo.connect_changed( /*gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move */|combo_selected_iter| { 
             println!("combo changed");
            /*  if let Some(list_iter) = l.iter(&list_path) {
@@ -648,33 +675,6 @@ fn main() {
 
 
     }));
-    
-
-
-    let in_ports = midi_in.ports();
-
-    let _conn_in; //declare here for scope
-    if !in_ports.is_empty() {
-        let sources = get_in_sources(&midi_in);
-        for (i, name) in sources.iter().enumerate() {
-            if name.to_lowercase().contains("matriarch") {
-                let in_port = &in_ports[i];
-
-                _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
-                    println!("received: {}: {:02X?} (len = {})", stamp, message, message.len());
-
-                    tx.send(message.to_vec()).unwrap();
-                    
-                    glib::source::idle_add(|| { // tell ui thread to read from channel
-                        check_for_new_message();
-                        glib::source::Continue(false)
-                    });
-
-                }, tx).unwrap();
-                break;
-            }
-        }
-    }
     
     if let Some(a) = &mut *conn_out.borrow_mut() {
         for p in 0..MAX_PARAM {
