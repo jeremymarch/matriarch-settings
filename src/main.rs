@@ -20,8 +20,8 @@ use mutex
 figure out problem with thread_local
 */
 
-use std::sync::Arc;
-use std::sync::Mutex;
+//use std::sync::Arc;
+//use std::sync::Mutex;
 use std::rc::Rc;
 use crate::glib::clone;
 
@@ -443,15 +443,7 @@ fn main() {
 
     let midi_out = MidiOutput::new("Matriarch Settings Output").unwrap();
     let out_ports = midi_out.ports();
-    //let mut conn_out: Option<MidiOutputConnection> = None;
     let mut conn_out = Rc::new(RefCell::new(None)); //https://github.com/gtk-rs/examples/issues/115
-    /* 
-    if let Some(new_port) = out_ports.last() {
-        println!("Connecting to port '{}'...", midi_out.port_name(new_port).unwrap());
-        if let Ok(out) = midi_out.connect(new_port, "Matriarch Settings Output Connection") {
-            conn_out = Rc::new(RefCell::new(Some(out)));
-        }
-    }*/
 
     if !out_ports.is_empty() {
         let sources = get_out_sources(&midi_out);
@@ -467,6 +459,13 @@ fn main() {
         }
     }
 
+    let mut midi_in = MidiInput::new("midir reading input").unwrap();
+    midi_in.ignore(Ignore::None);
+    let sources = get_in_sources(&midi_in);
+    for a in &sources {
+        println!("{}", a);
+    }
+
     application.connect_activate(clone!(@weak conn_out => move |app| {
             
         let button = gtk::Button::with_label("Connect");
@@ -474,15 +473,13 @@ fn main() {
             println!("Connect clicked!");
         });
 
-
         let combo = gtk::ComboBoxText::new();
-        let sources = vec!["blah", "abc"];
-        if sources.len() == 0 {
+        if sources.is_empty() {
             combo.append_text("No midi devices connected");
         }
         else {
-            for (_idx, i) in sources.iter().enumerate() {
-                combo.append_text(&i);
+            for i in &sources {
+                combo.append_text(i);
             }
         }
         combo.set_active(Some(0));
@@ -652,12 +649,7 @@ fn main() {
 
     }));
     
-    let mut midi_in = MidiInput::new("midir reading input").unwrap();
-    midi_in.ignore(Ignore::None);
-    let v = get_in_sources(&midi_in);
-    for a in v {
-        println!("{}", a);
-    }
+
 
     let in_ports = midi_in.ports();
 
@@ -750,7 +742,7 @@ fn param_changed(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, id: u8, pa
     println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
     GLOBAL_UIMODEL.with(|global| {
         if let Some(uimodel) = &*global.borrow() {
-            uimodel.label.set_text(&format!("")); //clear
+            uimodel.label.set_text(""); //clear
             match set_param(conn_out, id, param_index) {
                 Ok(msg) => {
                     uimodel.label.set_text(&format!("Set param: {:02X?}", msg));
