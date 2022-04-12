@@ -437,10 +437,25 @@ fn main() {
     let out_ports = midi_out.ports();
     //let mut conn_out: Option<MidiOutputConnection> = None;
     let mut conn_out = Rc::new(RefCell::new(None)); //https://github.com/gtk-rs/examples/issues/115
+    /* 
     if let Some(new_port) = out_ports.last() {
         println!("Connecting to port '{}'...", midi_out.port_name(new_port).unwrap());
         if let Ok(out) = midi_out.connect(new_port, "Matriarch Settings Output Connection") {
             conn_out = Rc::new(RefCell::new(Some(out)));
+        }
+    }*/
+
+    if !out_ports.is_empty() {
+        let sources = get_out_sources(&midi_out);
+        for (i, name) in sources.iter().enumerate() {
+            if name.to_lowercase().contains("matriarch") {
+                let out_port = &out_ports[i];
+
+                if let Ok(out) = midi_out.connect(out_port, "Matriarch Settings Output Connection") {
+                    conn_out = Rc::new(RefCell::new(Some(out)));
+                }
+                break;
+            }
         }
     }
 
@@ -603,13 +618,18 @@ fn main() {
     
     let mut midi_in = MidiInput::new("midir reading input").unwrap();
     midi_in.ignore(Ignore::None);
-
+    let v = get_sources(&midi_in);
+    for a in v {
+        println!("{}", a);
+    }
+/* 
     println!("Available input ports:");
     for (i, p) in midi_in.ports().iter().enumerate() {
         if let Ok(port) = midi_in.port_name(p) {
             println!("{}: {}", i, port);
         }
     }
+    */
 /* 
     println!("\nAvailable output ports:");
     for (i, p) in midi_out.ports().iter().enumerate() {
@@ -622,19 +642,25 @@ fn main() {
 
     let _conn_in; //declare here for scope
     if !in_ports.is_empty() {
-        let in_port = &in_ports[0];
+        let sources = get_sources(&midi_in);
+        for (i, name) in sources.iter().enumerate() {
+            if name.to_lowercase().contains("matriarch") {
+                let in_port = &in_ports[i];
 
-        _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
-            println!("received: {}: {:?} (len = {})", stamp, message, message.len());
+                _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
+                    println!("received: {}: {:?} (len = {})", stamp, message, message.len());
 
-            tx.send(message.to_vec()).unwrap();
-            
-            glib::source::idle_add(|| { // tell ui thread to read from channel
-                check_for_new_message();
-                glib::source::Continue(false)
-            });
+                    tx.send(message.to_vec()).unwrap();
+                    
+                    glib::source::idle_add(|| { // tell ui thread to read from channel
+                        check_for_new_message();
+                        glib::source::Continue(false)
+                    });
 
-        }, tx).unwrap();
+                }, tx).unwrap();
+                break;
+            }
+        }
     }
     
     if let Some(a) = &mut *conn_out.borrow_mut() {
@@ -646,6 +672,19 @@ fn main() {
             }
         }
     }
+
+    //https://github.com/gtk-rs/gtk4-rs/blob/9a70b149ca0aad042e7bf0cec3bcd8c781eb62a4/gtk4/README.md
+    glib::timeout_add_local(Duration::from_millis(5000), clone!(@weak conn_out => @default-return glib::Continue(true), move || {
+        //let a = get_sources(&midi_in);
+        /*
+        widgets.main_view.progress.set_fraction(0.0);
+        widgets
+            .view_stack
+            .set_visible_child(&widgets.main_view.container);
+            */
+            println!("check");
+        glib::Continue(true)
+    }) );
     
     application.run();
 }
@@ -754,16 +793,26 @@ fn load_css() {
     );
 }
 
-/* 
-//coremidi
-fn get_sources() -> Vec<String> {
+fn get_sources(input: &MidiInput/* , output: MidiOutput*/) -> Vec<String> {
     let mut v = Vec::new();
-    for (_i, source) in coremidi::Sources.into_iter().enumerate() {
-        if let Some(display_name) = source.display_name() {
-            v.push(display_name);
-            //println!("[{}] {}", i, display_name)
+    //println!("Available input ports:");
+    for (_i, p) in input.ports().iter().enumerate() {
+        if let Ok(port) = input.port_name(p) {
+            v.push(port);
+            //println!("{}: {}", i, port);
         }
     }
     v
 }
-*/
+
+fn get_out_sources(output: &MidiOutput/* , output: MidiOutput*/) -> Vec<String> {
+    let mut v = Vec::new();
+    //println!("Available input ports:");
+    for (_i, p) in output.ports().iter().enumerate() {
+        if let Ok(port) = output.port_name(p) {
+            v.push(port);
+            //println!("{}: {}", i, port);
+        }
+    }
+    v
+}
