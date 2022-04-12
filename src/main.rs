@@ -20,8 +20,8 @@ use mutex
 figure out problem with thread_local
 */
 
-use std::sync::Arc;
-use std::sync::Mutex;
+//use std::sync::Arc;
+//use std::sync::Mutex;
 use std::rc::Rc;
 use crate::glib::clone;
 
@@ -48,6 +48,7 @@ use midir::{MidiInput, Ignore, MidiOutput, MidiOutputConnection };
 use std::thread::sleep;
 use std::time::Duration;
 
+//use std::borrow::BorrowMut;
 
 struct ParamListOption {
     id: u32,
@@ -616,11 +617,13 @@ fn main() {
 
     }));
     
-    let midi_in = MidiInput::new("midir reading input").unwrap();
-    midi_in.ignore(Ignore::None);
-    let v = get_in_sources(&midi_in);
-    for a in v {
-        println!("{}", a);
+    let midi_in = Rc::new(RefCell::new(Some(MidiInput::new("midir reading input").unwrap())));
+    if let Some(midin) = &mut *midi_in.borrow_mut() {
+        midin.ignore(Ignore::None);
+        let v = get_in_sources(&midin);
+        for a in v {
+            println!("{}", a);
+        }
     }
 /* 
     println!("Available input ports:");
@@ -638,27 +641,30 @@ fn main() {
         }
     }
 */
-    let in_ports = midi_in.ports();
-
     let _conn_in; //declare here for scope
-    if !in_ports.is_empty() {
-        let sources = get_in_sources(&midi_in);
-        for (i, name) in sources.iter().enumerate() {
-            if name.to_lowercase().contains("matriarch") {
-                let in_port = &in_ports[i];
+    if let Some(midin) = &mut *midi_in.borrow_mut() {
+        let in_ports = midin.ports();
 
-                _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
-                    println!("received: {}: {:?} (len = {})", stamp, message, message.len());
+        
+        if !in_ports.is_empty() {
+            let sources = get_in_sources(&midin);
+            for (i, name) in sources.iter().enumerate() {
+                if name.to_lowercase().contains("matriarch") {
+                    let in_port = &in_ports[i];
 
-                    tx.send(message.to_vec()).unwrap();
-                    
-                    glib::source::idle_add(|| { // tell ui thread to read from channel
-                        check_for_new_message();
-                        glib::source::Continue(false)
-                    });
+                    _conn_in = midin.connect(in_port, "midir-read-input", move |stamp, message, tx| {
+                        println!("received: {}: {:?} (len = {})", stamp, message, message.len());
 
-                }, tx).unwrap();
-                break;
+                        tx.send(message.to_vec()).unwrap();
+                        
+                        glib::source::idle_add(|| { // tell ui thread to read from channel
+                            check_for_new_message();
+                            glib::source::Continue(false)
+                        });
+
+                    }, tx).unwrap();
+                    break;
+                }
             }
         }
     }
