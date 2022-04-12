@@ -417,7 +417,7 @@ fn main() {
 
     /* 
     let mut matriarch_index:Option<usize> = None;
-    let v = get_sources();
+    let v = get_in_sources();
     if v.len() > 0 {
         for (idx, i) in v.iter().enumerate() {
             if i == "Moog Matriarch" {
@@ -616,9 +616,9 @@ fn main() {
 
     }));
     
-    let mut midi_in = MidiInput::new("midir reading input").unwrap();
+    let midi_in = MidiInput::new("midir reading input").unwrap();
     midi_in.ignore(Ignore::None);
-    let v = get_sources(&midi_in);
+    let v = get_in_sources(&midi_in);
     for a in v {
         println!("{}", a);
     }
@@ -642,7 +642,7 @@ fn main() {
 
     let _conn_in; //declare here for scope
     if !in_ports.is_empty() {
-        let sources = get_sources(&midi_in);
+        let sources = get_in_sources(&midi_in);
         for (i, name) in sources.iter().enumerate() {
             if name.to_lowercase().contains("matriarch") {
                 let in_port = &in_ports[i];
@@ -675,7 +675,7 @@ fn main() {
 
     //https://github.com/gtk-rs/gtk4-rs/blob/9a70b149ca0aad042e7bf0cec3bcd8c781eb62a4/gtk4/README.md
     glib::timeout_add_local(Duration::from_millis(5000), clone!(@weak conn_out => @default-return glib::Continue(true), move || {
-        //let a = get_sources(&midi_in);
+        //let a = get_in_sources(&midi_in);
         /*
         widgets.main_view.progress.set_fraction(0.0);
         widgets
@@ -793,7 +793,7 @@ fn load_css() {
     );
 }
 
-fn get_sources(input: &MidiInput/* , output: MidiOutput*/) -> Vec<String> {
+fn get_in_sources(input: &MidiInput/* , output: MidiOutput*/) -> Vec<String> {
     let mut v = Vec::new();
     //println!("Available input ports:");
     for (_i, p) in input.ports().iter().enumerate() {
