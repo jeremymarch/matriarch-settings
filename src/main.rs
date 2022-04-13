@@ -423,17 +423,6 @@ fn main() {
     */
     ];
 
-    /* 
-    let mut matriarch_index:Option<usize> = None;
-    let v = get_in_sources();
-    if v.len() > 0 {
-        for (idx, i) in v.iter().enumerate() {
-            if i == "Moog Matriarch" {
-                matriarch_index = Some(idx);
-            }
-        }
-    }
-    */
     //let data = Arc::new(Mutex::new(0i32));
 
     let (tx, rx) = mpsc::channel();
@@ -448,7 +437,7 @@ fn main() {
     if !out_ports.is_empty() {
         let sources = get_out_sources(&midi_out);
         for (i, name) in sources.iter().enumerate() {
-            if name.to_lowercase().contains("matriarch") {
+            if name.to_lowercase().contains("moog matriarch") {
                 let out_port = &out_ports[i];
 
                 if let Ok(out) = midi_out.connect(out_port, "Matriarch Settings Output Connection") {
@@ -472,7 +461,7 @@ fn main() {
     if !in_ports.is_empty() {
         let sources = get_in_sources(&midi_in);
         for (i, name) in sources.iter().enumerate() {
-            if name.to_lowercase().contains("matriarch") {
+            if name.to_lowercase().contains("moog matriarch") {
                 selected_port = Some(i as u32);
                 let in_port = &in_ports[i];
 
