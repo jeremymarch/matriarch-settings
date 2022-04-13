@@ -82,12 +82,12 @@ impl GenericOptions for ParamRangeOption {
         let mut v = Vec::new();
 
         for (idx, i) in (self.min..=self.max).enumerate() {
-            //let val:f32 = if self.id == 58 { i as f32 / 10 as f32 } else { i as f32 };
+            let val:f32 = if self.id == 58 { i as f32 / 10 as f32 } else { i as f32 };
             if idx == self.default_index {
-                v.push(format!("{}{}{} (Default{})", self.prefix, i, self.suffix, self.default_mesg));
+                v.push(format!("{}{}{} (Default{})", self.prefix, val, self.suffix, self.default_mesg));
             }
             else {
-                v.push(format!("{}{}{}", self.prefix, i, self.suffix));
+                v.push(format!("{}{}{}", self.prefix, val, self.suffix));
             }
         }
         v
