@@ -82,6 +82,7 @@ impl GenericOptions for ParamRangeOption {
         let mut v = Vec::new();
 
         for (idx, i) in (self.min..=self.max).enumerate() {
+            //let val:f32 = if self.id == 58 { i as f32 / 10 as f32 } else { i as f32 };
             if idx == self.default_index {
                 v.push(format!("{}{}{} (Default{})", self.prefix, i, self.suffix, self.default_mesg));
             }
@@ -139,7 +140,7 @@ thread_local!(
     //static GLOBAL_MIDI_OUT: RefCell<Option<&'static mut MidiOutputConnection>> = RefCell::new(None);
 );
 
-const MAX_PARAM: usize = 23;
+const MAX_PARAM: usize = 75;
 
 fn main() {
     
@@ -326,76 +327,394 @@ fn main() {
             default_index:1,
             default_mesg: "".to_string(),
             note: "".to_string()}),
-
-                /*
-    new Param(23, "Arp/Seq Swing", Slider(0, 16383, 8192)),
-    new Param(24, "Sequence Keyboard Control", Options(["Off", "On"], 1)),
-    new Param(25, "Delay Sequence Change", Options(["Off", "On"], 0)),
-    new Param(26, "Sequence Latch Restart", Options(["Off", "On"], 1), "Actual default different to documented"),
-    new Param(27, "Arp/Seq Clock Input Mode",
-        Options(["Clock", "Step-Advance Trigger"], 0)),
-    new Param(28, "Arp/Seq Clock Output",
-        Options(["Always", "Only When Playing"], 1)),
-    new Param(29, "Arp MIDI Output", Options(["Off", "On"], 1)),
-    new Param(30, "Send MIDI Clock", Options(["Off", "Only When Playing"], 0)),
-    new Param(31, "Send MIDI Start/Stop", Options(["Off", "On"], 0)),
-    new Param(32, "Follow MIDI Clock", Options(["Off", "On"], 1)),
-    new Param(33, "Follow MIDI Start/Stop", Options(["Off", "On"], 1)),
-    new Param(34, "Follow Song Position Pointer", Options(["Off", "On"], 1)),
-    new Param(35, "Clock Input PPQN Index",
-        Options(Range(0, 15), 3, "sixteenth notes [4PPQN]")),
-    new Param(36, "Clock Output PPQN Index",
-        Options(Range(0, 15), 3, "sixteenth notes [4PPQN]")),
-    new Param(37, "Pitch Bend Range (Semitones)",
-        Options(Range(0, 12), 2)),
-    new Param(38, "Keyboard Octave Transpose",
-        Options(["-2", "-1", "0", "1", "2"], 2, "no transpose")),
-    new Param(39, "Delayed Keyboard Octave Transpose", Options(["Off", "On"], 1)),
-    new Param(40, "Glide Type",
-        Options(["Linear Constant Rate", "Linear Constant Time", "Exponential"], 0)),
-    new Param(41, "Gated Glide", Options(["Off", "On"], 1)),
-    new Param(42, "Legato Glide", Options(["Off", "On"], 0), "Actual default different to documented"),
-    new Param(43, "Osc 2 Freq Knob Range",
-        Options(Range(0, 24).map(i => i + " Semitones"), 7)),
-    new Param(44, "Osc 3 Freq Knob Range",
-        Options(Range(0, 24).map(i => i + " Semitones"), 7)),
-    new Param(45, "Osc 4 Freq Knob Range",
-        Options(Range(0, 24).map(i => i + " Semitones"), 7)),
-    new Param(46, "Hard Sync Enable", Options(["Off", "On"], 0)),
-    new Param(47, "Osc 2 Hard Sync", Options(["Off", "On"], 0)),
-    new Param(48, "Osc 3 Hard Sync", Options(["Off", "On"], 0)),
-    new Param(49, "Osc 4 Hard Sync", Options(["Off", "On"], 0)),
-    new Param(50, "Delay Ping Pong", Options(["Off", "On"], 0)),
-    new Param(51, "Delay Sync", Options(["Off", "On"], 0)),
-    new Param(52, "Delay Filter Brightness", Options(["Dark", "Bright"], 1)),
-    new Param(53, "Delay CV Sync-Bend", Options(["Off", "On"], 0)),
-    new Param(54, "Tap-Tempo Clock Division Persistence", Options(["Off", "On"], 0)),
-    new Param(55, "Paraphony Mode", Options(["Mono", "Duo", "Quad"], 2), "Actual default different to documented"),
-    new Param(56, "Paraphonic Unison", Options(["Off", "On"], 0)),
-    new Param(57, "Multi Trig", Options(["Off", "On"], 0)),
-    new Param(58, "Pitch Variance",
-        Options(Range(0, 400).map(i => "± " + (i / 10) + " cents"), 0)),
-    new Param(59, "KB CV OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(60, "Arp/Seq CV OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(61, "KB VEL OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(62, "Arp/Seq VEL OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(63, "KB AT OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(64, "MOD WHL OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(65, "KB GATE OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(66, "Arp/Seq GATE OUT Range", Options(["-5V to +5V", "0V to 10V"], 0)),
-    new Param(67, "Round-Robin Mode",
-        Options(["Off", "First-Note Reset", "On"], 1)),
-    new Param(68, "Restore Stolen Voices", Options(["Off", "On"], 0)),
-    new Param(69, "Update Unison on Note-Off", Options(["Off", "On"], 0)),
-    new Param(70, "Mod Oscillator Square Wave Polarity",
-        Options(["Unipolar", "Bipolar"], 1)),
-    new Param(71, "Noise Filter Cutoff", Slider(0, 16383, 0), "Actual default different to documented"),
-    new Param(72, "Arp/Seq Random Repeats",
-        Options(["no repeating notes/steps in RND direction",
-            "allow repeating notes (true random)"], 1)),
-    new Param(73, "ARP/SEQ CV OUT Mirrors KB CV", Options(["Off", "On"], 0)),
-    new Param(74, "KB CV OUT Mirrors ARP/SEQ CV", Options(["Off", "On"], 0)),
-    */
+        Box::new(ParamListOption {
+            id:23, 
+            name:"Arp/Seq Swing".to_string(),
+            options:vec!["Slider".to_string(), "Slider".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}), //Slider(0, 16383, 8192)
+            /* new Param(23, "Arp/Seq Swing", Slider(0, 16383, 8192)), */
+        Box::new(ParamListOption {
+            id:24, 
+            name:"Sequence Keyboard Control".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:25, 
+            name:"Delay Sequence Change".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:26, 
+            name:"Sequence Latch Restart".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "Actual default different to documented".to_string()}),
+        Box::new(ParamListOption {
+            id:27, 
+            name:"Arp/Seq Clock Input Mode".to_string(),
+            options:vec!["Clock".to_string(), "Step-Advance Trigger".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:28, 
+            name:"Arp/Seq Clock Output".to_string(),
+            options:vec!["Always".to_string(), "Only When Playing".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:29, 
+            name:"Arp MIDI Output".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:30, 
+            name:"Send MIDI Clock".to_string(),
+            options:vec!["Off".to_string(), "On When Playing".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:31, 
+            name:"Send MIDI Start/Stop".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:32, 
+            name:"Follow MIDI Clock".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:33, 
+            name:"Follow MIDI Start/Stop".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:34, 
+            name:"Follow Song Position Pointer".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamRangeOption {
+            id:35, 
+            name:"Clock Input PPQN Index".to_string(), 
+            min:0,
+            max:15,
+            default_index:3,
+            default_mesg: " sixteenth notes".to_string(),
+            note: "".to_string(),
+            prefix:"".to_string(),
+            suffix:" PPQN".to_string()}),
+        Box::new(ParamRangeOption {
+            id:36, 
+            name:"Clock Output PPQN Index".to_string(), 
+            min:0,
+            max:15,
+            default_index:3,
+            default_mesg: " sixteenth notes".to_string(),
+            note: "".to_string(),
+            prefix:"".to_string(),
+            suffix:" PPQN".to_string()}),
+        Box::new(ParamRangeOption {
+            id:37, 
+            name:"Pitch Bend Range (Semitones)".to_string(), 
+            min:0,
+            max:12,
+            default_index:2,
+            default_mesg: " sixteenth notes".to_string(),
+            note: "".to_string(),
+            prefix:"".to_string(),
+            suffix:" PPQN".to_string()}),
+        Box::new(ParamListOption {
+            id:38, 
+            name:"Keyboard Octave Transpose".to_string(),
+            options:vec!["-2".to_string(), "-1".to_string(), "0".to_string(), "1".to_string(), "2".to_string()],
+            default_index:2,
+            default_mesg: " no transpose".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:39, 
+            name:"Delayed Keyboard Octave Transpose".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:40, 
+            name:"Glide Type".to_string(),
+            options:vec!["Linear Constant Rate".to_string(), "Linear Constant Time".to_string(), "Exponential".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:41, 
+            name:"Gated Glid".to_string(),
+            options:vec!["Linear Constant Rate".to_string(), "Linear Constant Time".to_string(), "Exponential".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:42, 
+            name:"Legato Glide".to_string(),
+            options:vec!["Linear Constant Rate".to_string(), "Linear Constant Time".to_string(), "Exponential".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "Actual default different to documented".to_string()}),
+        Box::new(ParamRangeOption {
+            id:43, 
+            name:"Osc 2 Freq Knob Range".to_string(), 
+            min:0,
+            max:24,
+            default_index:7,
+            default_mesg: "".to_string(),
+            note: "".to_string(),
+            prefix:"".to_string(),
+            suffix:" Semitones".to_string()}),
+        Box::new(ParamRangeOption {
+            id:44, 
+            name:"Osc 3 Freq Knob Range".to_string(), 
+            min:0,
+            max:24,
+            default_index:7,
+            default_mesg: "".to_string(),
+            note: "".to_string(),
+            prefix:"".to_string(),
+            suffix:" Semitones".to_string()}),
+        Box::new(ParamRangeOption {
+            id:45, 
+            name:"Osc 4 Freq Knob Range".to_string(), 
+            min:0,
+            max:24,
+            default_index:7,
+            default_mesg: "".to_string(),
+            note: "".to_string(),
+            prefix:"".to_string(),
+            suffix:" Semitones".to_string()}),
+        Box::new(ParamListOption {
+            id:46, 
+            name:"Hard Sync Enable".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:47, 
+            name:"Osc 2 Hard Sync".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:48, 
+            name:"Osc 3 Hard Sync".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:49, 
+            name:"Osc 4 Hard Sync".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:50, 
+            name:"Delay Ping Pong".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:51, 
+            name:"Delay Sync".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:52, 
+            name:"Delay Filter Brightness".to_string(),
+            options:vec!["Dark".to_string(), "Bright".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:53, 
+            name:"Delay CV Sync-Bend".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:54, 
+            name:"Tap-Tempo Clock Division Persistence".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:55, 
+            name:"Paraphony Mode".to_string(),
+            options:vec!["Mono".to_string(), "Duo".to_string(), "Quad".to_string()],
+            default_index:2,
+            default_mesg: "".to_string(),
+            note: "Actual default different to documented".to_string()}),
+        Box::new(ParamListOption {
+            id:56, 
+            name:"Paraphonic Unison".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:57, 
+            name:"Multi Trig".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamRangeOption {
+            id:58, 
+            name:"Pitch Variance".to_string(), 
+            min:0,
+            max:400,
+            default_index:7,
+            default_mesg: "".to_string(),
+            note: "".to_string(),
+            prefix:"± ".to_string(),
+            suffix:" cents".to_string()}),
+    /* new Param(58, "Pitch Variance", Options(Range(0, 400).map(i => "± " + (i / 10) + " cents"), 0)),*/
+        Box::new(ParamListOption {
+            id:59, 
+            name:"KB CV OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:60, 
+            name:"Arp/Seq CV OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:61, 
+            name:"KB VEL OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:62, 
+            name:"Arp/Seq VEL OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:63, 
+            name:"KB AT OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:64, 
+            name:"MOD WHL OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:65, 
+            name:"KB GATE OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:66, 
+            name:"Arp/Seq GATE OUT Range".to_string(),
+            options:vec!["-5V to +5V".to_string(), "0V to 10V".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:67, 
+            name:"Round-Robin Mode".to_string(),
+            options:vec!["Off".to_string(), "First-Note Reset".to_string(), "On".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:68, 
+            name:"Restore Stolen Voices".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:69, 
+            name:"Update Unison on Note-Off".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:70, 
+            name:"Mod Oscillator Square Wave Polarity".to_string(),
+            options:vec!["Unipolar".to_string(), "Bipolar".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:71, 
+            name:"Noise Filter Cutoff".to_string(),
+            options:vec!["Slider".to_string(), "Slider".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "Actual default different to documented".to_string()}), //Slider(0, 16383, 0)
+    /* new Param(71, "Noise Filter Cutoff", Slider(0, 16383, 0), "Actual default different to documented"),*/
+        Box::new(ParamListOption {
+            id:72, 
+            name:"Arp/Seq Random Repeats".to_string(),
+            options:vec!["no repeating notes/steps in RND direction".to_string(), "allow repeating notes (true random)".to_string()],
+            default_index:1,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:73, 
+            name:"ARP/SEQ CV OUT Mirrors KB CV".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
+            id:74, 
+            name:"KB CV OUT Mirrors ARP/SEQ CV".to_string(),
+            options:vec!["Off".to_string(), "On".to_string()],
+            default_index:0,
+            default_mesg: "".to_string(),
+            note: "".to_string()}),
     ];
 
     //let data = Arc::new(Mutex::new(0i32));
@@ -677,7 +996,6 @@ fn check_for_new_message() {
         if let Some(rx) = &*global.borrow() {
             let received: Vec<u8> = rx.recv().unwrap();
             //ui.main_buffer.set_text(&received);
-            //
             println!("passed message: {:02X?}", received);
 
             GLOBAL_UIMODEL.with(|global| {
@@ -689,15 +1007,16 @@ fn check_for_new_message() {
                 
                         let msb = received[5];
                         let lsb = received[6];
-                        let param_value = 128 * msb + lsb;
+                        let param_value:i32 = (128 * msb as i32 + lsb as i32).into();
         
                         //let param_row:i32 = 1;
                         //let param_value:i32 = 9;
-                        update_param_row(&uimodel.list_store, param_row.into(), param_value.into());
+                        if param_row != 23 && param_row != 71 { //ignore sliders for now
+                            update_param_row(&uimodel.list_store, param_row.into(), param_value.into());
+                        }
                     }
                 }
             });
-            
         }
     });
 }
