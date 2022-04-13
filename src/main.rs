@@ -83,9 +83,9 @@ impl GenericOptions for ParamRangeOption {
 
         for (idx, i) in (self.min..=self.max).enumerate() {
             //divide range of param 58 by 10 to get cents
-            let val:f32 = if self.id == 58 { i as f32 / 10 as f32 } else { i as f32 };
+            let val:f32 = if self.id == 58 { i as f32 / 10_f32 } else { i as f32 };
             if idx == self.default_index {
-                v.push(format!("{}{}{} (Default{})", self.prefix, val, self.suffix, self.default_mesg));
+                v.push(format!("{}{}{} (Default{})", self.prefix, val, self.suffix, if !self.default_mesg.is_empty() { format!(" – {}", self.default_mesg)} else { String::from("") }));
             }
             else {
                 v.push(format!("{}{}{}", self.prefix, val, self.suffix));
@@ -107,7 +107,7 @@ impl GenericOptions for ParamRangeOption {
 impl GenericOptions for ParamListOption {
     fn get_options(&self) -> Vec<String> {
         let a = self.options.to_owned();
-        a.into_iter().enumerate().map(|(idx, r)| { if idx == self.default_index { format!("{} (Default{})", r, self.default_mesg) } else { r } }).collect::<Vec<String>>()
+        a.into_iter().enumerate().map(|(idx, r)| { if idx == self.default_index { format!("{} (Default{})", r, if !self.default_mesg.is_empty() { format!(" – {}", self.default_mesg)} else { String::from("") }) } else { r } }).collect::<Vec<String>>()
     }
     fn get_name(&self) -> String {
         self.name.to_owned()
@@ -171,7 +171,7 @@ fn main() {
             min: 0,
             max: 31, 
             default_index:0,
-            default_mesg: " - 12-TET".to_string(),
+            default_mesg: "12-TET".to_string(),
             note:"".to_string(),
             prefix:"".to_string(),
             suffix:"".to_string()}),
@@ -334,8 +334,8 @@ fn main() {
             options:vec!["Slider".to_string(), "Slider".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
-            note: "".to_string()}), //Slider(0, 16383, 8192)
-            /* new Param(23, "Arp/Seq Swing", Slider(0, 16383, 8192)), */
+            note: "".to_string()}), //Slider(819, 15565, 8192)
+            /* new Param(23, 'Arp/Seq Swing', Slider(819, 15565, 8192)), */
         Box::new(ParamListOption {
             id:24, 
             name:"Sequence Keyboard Control".to_string(),
@@ -413,42 +413,36 @@ fn main() {
             default_index:1,
             default_mesg: "".to_string(),
             note: "".to_string()}),
-        Box::new(ParamRangeOption {
+        Box::new(ParamListOption {
             id:35, 
-            name:"Clock Input PPQN Index".to_string(), 
-            min:0,
-            max:15,
+            name:"Clock Input PPQN Index".to_string(),
+            options:vec!["1 PPQN".to_string(), "2 PPQN".to_string(), "3 PPQN".to_string(), "4 PPQN".to_string(), "5 PPQN".to_string(), "6 PPQN".to_string(), "7 PPQN".to_string(), "8 PPQN".to_string(), "9 PPQN".to_string(), "10 PPQN".to_string(), "11 PPQN".to_string(), "12 PPQN".to_string(), "24 PPQN".to_string(), "48 PPQN".to_string()],
             default_index:3,
-            default_mesg: " sixteenth notes".to_string(),
-            note: "".to_string(),
-            prefix:"".to_string(),
-            suffix:" PPQN".to_string()}),
-        Box::new(ParamRangeOption {
+            default_mesg: "sixteenth notes".to_string(),
+            note: "".to_string()}),
+        Box::new(ParamListOption {
             id:36, 
-            name:"Clock Output PPQN Index".to_string(), 
-            min:0,
-            max:15,
+            name:"Clock Output PPQN Index".to_string(),
+            options:vec!["1 PPQN".to_string(), "2 PPQN".to_string(), "3 PPQN".to_string(), "4 PPQN".to_string(), "5 PPQN".to_string(), "6 PPQN".to_string(), "7 PPQN".to_string(), "8 PPQN".to_string(), "9 PPQN".to_string(), "10 PPQN".to_string(), "11 PPQN".to_string(), "12 PPQN".to_string(), "24 PPQN".to_string(), "48 PPQN".to_string()],
             default_index:3,
-            default_mesg: " sixteenth notes".to_string(),
-            note: "".to_string(),
-            prefix:"".to_string(),
-            suffix:" PPQN".to_string()}),
+            default_mesg: "sixteenth notes".to_string(),
+            note: "".to_string()}),
         Box::new(ParamRangeOption {
             id:37, 
             name:"Pitch Bend Range (Semitones)".to_string(), 
             min:0,
             max:12,
             default_index:2,
-            default_mesg: " sixteenth notes".to_string(),
+            default_mesg: "".to_string(),
             note: "".to_string(),
             prefix:"".to_string(),
-            suffix:" PPQN".to_string()}),
+            suffix:"".to_string()}),
         Box::new(ParamListOption {
             id:38, 
             name:"Keyboard Octave Transpose".to_string(),
             options:vec!["-2".to_string(), "-1".to_string(), "0".to_string(), "1".to_string(), "2".to_string()],
             default_index:2,
-            default_mesg: " no transpose".to_string(),
+            default_mesg: "no transpose".to_string(),
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:39, 
@@ -466,7 +460,7 @@ fn main() {
             note: "".to_string()}),
         Box::new(ParamListOption {
             id:41, 
-            name:"Gated Glid".to_string(),
+            name:"Gated Glide".to_string(),
             options:vec!["Linear Constant Rate".to_string(), "Linear Constant Time".to_string(), "Exponential".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -595,14 +589,13 @@ fn main() {
         Box::new(ParamRangeOption {
             id:58, 
             name:"Pitch Variance".to_string(), 
-            min:0,
-            max:400,
-            default_index:7,
+            min:0, // divide by 10 to get actual value
+            max:400, // divide by 10 to get actual value
+            default_index:0,
             default_mesg: "".to_string(),
             note: "".to_string(),
             prefix:"± ".to_string(),
             suffix:" cents".to_string()}),
-    /* new Param(58, "Pitch Variance", Options(Range(0, 400).map(i => "± " + (i / 10) + " cents"), 0)),*/
         Box::new(ParamListOption {
             id:59, 
             name:"KB CV OUT Range".to_string(),
@@ -751,7 +744,7 @@ fn main() {
     }
 
     let in_ports = midi_in.ports();
-    let mut selected_port:Option<u32> = None;
+    let mut selected_port:Option<u32> = Some(0);
     let _conn_in; //declare here for scope
     if !in_ports.is_empty() {
         let sources = get_in_sources(&midi_in);
@@ -1008,12 +1001,12 @@ fn check_for_new_message() {
                 
                         let msb = received[5];
                         let lsb = received[6];
-                        let param_value:i32 = (128 * msb as i32 + lsb as i32).into();
+                        let param_value = 128 * msb as i32 + lsb as i32;
         
                         //let param_row:i32 = 1;
                         //let param_value:i32 = 9;
                         if param_row != 23 && param_row != 71 { //ignore sliders for now
-                            update_param_row(&uimodel.list_store, param_row.into(), param_value.into());
+                            update_param_row(&uimodel.list_store, param_row.into(), param_value);
                         }
                     }
                 }
