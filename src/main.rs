@@ -52,7 +52,6 @@ use std::time::Duration;
 struct ParamListOption {
     id: u32,
     name: String,
-    value:String,
     options: Vec<String>,
     default_index:usize, //index in options vector
     default_mesg:String,
@@ -62,7 +61,6 @@ struct ParamListOption {
 struct ParamRangeOption {
     id: u32,
     name: String,
-    value:String,
     min: u32,
     max: u32,
     default_index:usize, //index in min/max range
@@ -158,7 +156,6 @@ fn main() {
         Box::new(ParamRangeOption {
             id:0, 
             name:"Unit ID".to_string(), 
-            value:"".to_string(), 
             min:0,
             max:15,
             default_index:0,
@@ -169,7 +166,6 @@ fn main() {
         Box::new(ParamRangeOption {
             id:1, 
             name:"Tuning Scale".to_string(), 
-            value:"".to_string(), 
             min: 0,
             max: 31, 
             default_index:0,
@@ -180,7 +176,6 @@ fn main() {
         Box::new(ParamListOption {
             id:2, 
             name:"Knob Mode".to_string(), 
-            value:"".to_string(), 
             options:vec!["Snap".to_string(), "Pass-Thru".to_string(), "Relative".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
@@ -188,7 +183,6 @@ fn main() {
         Box::new(ParamListOption {
             id:3, 
             name:"Note Priority".to_string(), 
-            value:"".to_string(), 
             options:vec!["Low".to_string(), "High".to_string(), "Last Note".to_string()],
             default_index:2,
             default_mesg: "".to_string(),
@@ -196,7 +190,6 @@ fn main() {
         Box::new(ParamListOption {
             id:4, 
             name:"Transmit Program Change".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
@@ -204,7 +197,6 @@ fn main() {
         Box::new(ParamListOption {
             id:5, 
             name:"Receive Program Change".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -212,7 +204,6 @@ fn main() {
         Box::new(ParamListOption {
             id:6, 
             name:"MIDI Input Ports".to_string(), 
-            value:"".to_string(), 
             options:vec!["none".to_string(), "DIN only".to_string(), "USB only".to_string(), "Both DIN and USB".to_string()],
             default_index:3,
             default_mesg: "".to_string(),
@@ -220,7 +211,6 @@ fn main() {
         Box::new(ParamListOption {
             id:7, 
             name:"MIDI Output Ports".to_string(), 
-            value:"".to_string(), 
             options:vec!["none".to_string(), "DIN only".to_string(), "USB only".to_string(), "Both DIN and USB".to_string()],
             default_index:3,
             default_mesg: "".to_string(),
@@ -228,7 +218,6 @@ fn main() {
         Box::new(ParamListOption {
             id:8, 
             name:"MIDI Echo USB In".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "Echo USB In to DIN Out".to_string(), "Echo USB In to USB Out".to_string(), "Echo DIN In to Both DIN and USB Out".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
@@ -236,7 +225,6 @@ fn main() {
         Box::new(ParamListOption {
             id:9, 
             name:"MIDI Echo DIN In".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "Echo DIN In to DIN Out".to_string(), "Echo DIN In to USB Out".to_string(), "Echo DIN In to Both DIN and USB Out".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
@@ -244,7 +232,6 @@ fn main() {
         Box::new(ParamRangeOption {
             id:10, 
             name:"MIDI Channel In".to_string(), 
-            value:"".to_string(), 
             min:1,
             max:16,
             default_index:0,
@@ -255,7 +242,6 @@ fn main() {
         Box::new(ParamRangeOption {
             id:11, 
             name:"MIDI Channel Out".to_string(), 
-            value:"".to_string(), 
             min:1,
             max:16,
             default_index:0,
@@ -266,7 +252,6 @@ fn main() {
         Box::new(ParamListOption {
             id:12, 
             name:"MIDI Out Filter - Keys".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -274,7 +259,6 @@ fn main() {
         Box::new(ParamListOption {
             id:13, 
             name:"MIDI Out Filter - Wheels".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -282,7 +266,6 @@ fn main() {
         Box::new(ParamListOption {
             id:14, 
             name:"MIDI Out Filter - Panel".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -290,7 +273,6 @@ fn main() {
         Box::new(ParamListOption {
             id:15, 
             name:"Output 14-bit MIDI CCs".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
@@ -298,7 +280,6 @@ fn main() {
         Box::new(ParamListOption {
             id:16, 
             name:"Local Control: Keys".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -306,7 +287,6 @@ fn main() {
         Box::new(ParamListOption {
             id:17, 
             name:"Local Control: Wheels".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -314,7 +294,6 @@ fn main() {
         Box::new(ParamListOption {
             id:18, 
             name:"Local Control: Panel".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
@@ -322,7 +301,6 @@ fn main() {
         Box::new(ParamListOption {
             id:19, 
             name:"Local Control: Arp/Seq".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
@@ -330,7 +308,6 @@ fn main() {
         Box::new(ParamListOption {
             id:20, 
             name:"Sequence Transpose Mode".to_string(), 
-            value:"".to_string(), 
             options:vec!["Relative to First Note".to_string(), "Relative to Middle C".to_string()],
             default_index:0,
             default_mesg: "".to_string(),
@@ -338,15 +315,13 @@ fn main() {
         Box::new(ParamListOption {
             id:21, 
             name:"Arp/Seq Keyed Timing Reset".to_string(), 
-            value:"".to_string(), 
             options:vec!["Off".to_string(), "On".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
             note: "Actual default different to documented".to_string()}),
         Box::new(ParamListOption {
             id:22, 
-            name:"Arp FW/BW Repeats".to_string(), 
-            value:"".to_string(), 
+            name:"Arp FW/BW Repeats".to_string(),
             options:vec!["Don't Repeat end notes".to_string(), "Repeat end notes".to_string()],
             default_index:1,
             default_mesg: "".to_string(),
