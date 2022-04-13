@@ -44,13 +44,13 @@ use std::sync::mpsc;
 use adw::{ApplicationWindow, HeaderBar};
 
 use std::error::Error;
-use midir::{ Ignore, MidiInput, MidiOutput, MidiOutputConnection, MidiInputConnection };
+use midir::{ Ignore, MidiInput, MidiOutput, MidiOutputConnection/* , MidiInputConnection */ };
 use std::thread::sleep;
 use std::time::Duration;
 
 
 struct ParamListOption {
-    id: u32,
+    id: u8,
     name: String,
     options: Vec<String>,
     default_index:usize, //index in options vector
@@ -59,7 +59,7 @@ struct ParamListOption {
 }
 
 struct ParamRangeOption {
-    id: u32,
+    id: u8,
     name: String,
     min: u32,
     max: u32,
@@ -73,7 +73,7 @@ struct ParamRangeOption {
 trait GenericOptions {
     fn get_options(&self) -> Vec<String>;
     fn get_name(&self) -> String;
-    fn get_id(&self) -> u32;
+    fn get_id(&self) -> u8;
     fn get_default_index(&self) -> usize;
 }
 
@@ -96,7 +96,7 @@ impl GenericOptions for ParamRangeOption {
     fn get_name(&self) -> String {
         self.name.to_owned()
     }
-    fn get_id(&self) -> u32 {
+    fn get_id(&self) -> u8 {
         self.id
     }
     fn get_default_index(&self) -> usize {
@@ -112,7 +112,7 @@ impl GenericOptions for ParamListOption {
     fn get_name(&self) -> String {
         self.name.to_owned()
     }
-    fn get_id(&self) -> u32 {
+    fn get_id(&self) -> u8 {
         self.id
     }
     fn get_default_index(&self) -> usize {
@@ -140,8 +140,6 @@ thread_local!(
 
     //static GLOBAL_MIDI_OUT: RefCell<Option<&'static mut MidiOutputConnection>> = RefCell::new(None);
 );
-
-const MAX_PARAM: usize = 75;
 
 fn main() {
     
@@ -373,6 +371,15 @@ fn main() {
             *global.borrow_mut() = Some(UIModel {list_store:model_list_of_data, label:midi_received_label, sources:combo});
         });
 
+        let window = ApplicationWindow::builder()
+            .application(app)
+            .title("Moog Matriarch Global Settings")
+            .default_width(550)
+            .default_height(400)
+            .content(&vbox)
+            .build();
+        window.show();
+
         //https://github.com/gtk-rs/gtk4-rs/blob/9a70b149ca0aad042e7bf0cec3bcd8c781eb62a4/gtk4/README.md
         glib::timeout_add_local(Duration::from_millis(5000), clone!(@weak conn_out => @default-return glib::Continue(true), move || {
             //let a = get_in_sources(&midi_in);
@@ -386,27 +393,16 @@ fn main() {
             glib::Continue(true)
         }) );
 
-        let window = ApplicationWindow::builder()
-            .application(app)
-            .title("Moog Matriarch Global Settings")
-            .default_width(550)
-            .default_height(400)
-            .content(&vbox)
-            .build();
-        window.show();
-
-
-    }));
-    
-    if let Some(a) = &mut *conn_out.borrow_mut() {
-        for p in 0..MAX_PARAM {
-            sleep(Duration::from_millis(200));
-            match read_param(a, p.try_into().unwrap() ) {
-                Ok(_a) => (),
-                Err(_e) => panic!("error reading param"),
+        if let Some(a) = &mut *conn_out.borrow_mut() {
+            for param in &params {
+                sleep(Duration::from_millis(200));
+                match read_param(a, param.get_id() ) {
+                    Ok(_a) => (),
+                    Err(_e) => panic!("error reading param"),
+                }
             }
-        }
-    }
+        };
+    }));
     
     application.run();
 }
@@ -515,9 +511,8 @@ fn load_css() {
     );
 }
 
-fn get_in_sources(input: &MidiInput/* , output: MidiOutput*/) -> Vec<String> {
+fn get_in_sources(input: &MidiInput) -> Vec<String> {
     let mut v = Vec::new();
-    //println!("Available input ports:");
     for (_i, p) in input.ports().iter().enumerate() {
         if let Ok(port) = input.port_name(p) {
             v.push(port);
@@ -527,9 +522,8 @@ fn get_in_sources(input: &MidiInput/* , output: MidiOutput*/) -> Vec<String> {
     v
 }
 
-fn get_out_sources(output: &MidiOutput/* , output: MidiOutput*/) -> Vec<String> {
+fn get_out_sources(output: &MidiOutput) -> Vec<String> {
     let mut v = Vec::new();
-    //println!("Available input ports:");
     for (_i, p) in output.ports().iter().enumerate() {
         if let Ok(port) = output.port_name(p) {
             v.push(port);
