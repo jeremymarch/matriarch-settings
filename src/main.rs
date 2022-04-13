@@ -82,6 +82,7 @@ impl GenericOptions for ParamRangeOption {
         let mut v = Vec::new();
 
         for (idx, i) in (self.min..=self.max).enumerate() {
+            //divide range of param 58 by 10 to get cents
             let val:f32 = if self.id == 58 { i as f32 / 10 as f32 } else { i as f32 };
             if idx == self.default_index {
                 v.push(format!("{}{}{} (Default{})", self.prefix, val, self.suffix, self.default_mesg));

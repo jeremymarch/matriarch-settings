@@ -11,3 +11,7 @@ sudo apt-get install -y libadwaita-1-dev
     sudo apt-get install -y libgdk-pixbuf-2.0-dev  
     sudo apt-get install -y libpango1.0-dev  
     
+## To do:  
+- Allow to set midi port from combo rather than just selecting moog matriarch port
+- Add gtkcellrenderer hscale (slider)
+- Figure out why gktcellrenderer combos do not scroll
