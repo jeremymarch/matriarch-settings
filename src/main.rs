@@ -21,29 +21,29 @@ figure out problem with thread_local
 
 //use std::sync::Arc;
 //use std::sync::Mutex;
-use std::rc::Rc;
 use crate::glib::clone;
+use std::rc::Rc;
 
-use gtk::prelude::*;
-use gtk::{Application};
-use gtk::TreeView;
-use gtk::ListStore;
-use gtk::TreeViewColumn;
-use gtk::glib;
-use gtk::CssProvider;
-use gtk::TreePath;
 use crate::glib::Value;
-use gtk::StyleContext;
 use gtk::gdk::Display;
+use gtk::glib;
+use gtk::prelude::*;
+use gtk::Application;
+use gtk::CssProvider;
 use gtk::Label;
+use gtk::ListStore;
+use gtk::StyleContext;
+use gtk::TreePath;
+use gtk::TreeView;
+use gtk::TreeViewColumn;
 //use adw::prelude::*;
 use std::cell::RefCell;
 use std::sync::mpsc;
 
 use adw::{ApplicationWindow, HeaderBar};
 
+use midir::{Ignore, MidiInput, MidiOutput, MidiOutputConnection /* , MidiInputConnection */};
 use std::error::Error;
-use midir::{ Ignore, MidiInput, MidiOutput, MidiOutputConnection/* , MidiInputConnection */ };
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -51,11 +51,11 @@ mod parameters;
 use parameters::*;
 
 struct UIModel {
-    list_store:ListStore,
-    label:Label,
-    sources:gtk::ComboBoxText,
+    list_store: ListStore,
+    label: Label,
+    sources: gtk::ComboBoxText,
 }
-/* 
+/*
 struct Midi {
     input: MidiInput,
     output: MidiOutput,
@@ -67,20 +67,17 @@ thread_local!(
     static GLOBAL_RX: RefCell<Option<mpsc::Receiver<Vec<u8>>>> = RefCell::new(None);
 
     static GLOBAL_UIMODEL: RefCell<Option<UIModel>> = RefCell::new(None);
-
-    //static GLOBAL_MIDI_OUT: RefCell<Option<&'static mut MidiOutputConnection>> = RefCell::new(None);
 );
 
 fn main() {
-    
     let application = Application::builder()
         .application_id("com.philolog.matriarch-settings")
         .build();
 
-        application.connect_startup(|_| {
-            adw::init();
-            load_css();
-        });
+    application.connect_startup(|_| {
+        adw::init();
+        load_css();
+    });
 
     let params = get_params();
 
@@ -101,7 +98,8 @@ fn main() {
             if name.to_lowercase().contains("moog matriarch") {
                 let out_port = &out_ports[i];
 
-                if let Ok(out) = midi_out.connect(out_port, "Matriarch Settings Output Connection") {
+                if let Ok(out) = midi_out.connect(out_port, "Matriarch Settings Output Connection")
+                {
                     conn_out = Rc::new(RefCell::new(Some(out)));
                 }
                 break;
@@ -117,7 +115,7 @@ fn main() {
     }
 
     let in_ports = midi_in.ports();
-    let mut selected_port:Option<u32> = Some(0);
+    let mut selected_port: Option<u32> = Some(0);
     let _conn_in; //declare here for scope
     if !in_ports.is_empty() {
         let sources = get_in_sources(&midi_in);
@@ -126,24 +124,36 @@ fn main() {
                 selected_port = Some(i as u32);
                 let in_port = &in_ports[i];
 
-                _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, tx| {
-                    println!("received: {}: {:02X?} (len = {})", stamp, message, message.len());
+                _conn_in = midi_in
+                    .connect(
+                        in_port,
+                        "midir-read-input",
+                        move |stamp, message, tx| {
+                            println!(
+                                "received: {}: {:02X?} (len = {})",
+                                stamp,
+                                message,
+                                message.len()
+                            );
 
-                    tx.send(message.to_vec()).unwrap();
-                    
-                    glib::source::idle_add(|| { // tell ui thread to read from channel
-                        check_for_new_message();
-                        glib::source::Continue(false)
-                    });
+                            tx.send(message.to_vec()).unwrap();
 
-                }, tx).unwrap();
+                            glib::source::idle_add(|| {
+                                // tell ui thread to read from channel
+                                check_for_new_message();
+                                glib::source::Continue(false)
+                            });
+                        },
+                        tx,
+                    )
+                    .unwrap();
                 break;
             }
         }
     }
 
     application.connect_activate(clone!(@weak conn_out => move |app| {
-            
+
         let button = gtk::Button::with_label("Connect");
         button.connect_clicked(|_| {
             println!("Connect clicked!");
@@ -160,7 +170,7 @@ fn main() {
         }
 
         combo.set_active(selected_port);
-        combo.connect_changed( /*gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move */|combo_selected_iter| { 
+        combo.connect_changed( /*gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move */|combo_selected_iter| {
             println!("combo changed");
            /*  if let Some(list_iter) = l.iter(&list_path) {
                 if let Ok(combo_model) = l.get_value(&list_iter, 2).get::<ListStore>() {
@@ -179,7 +189,7 @@ fn main() {
 
 
         let view_list = TreeView::new();
-        
+
         let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
         let model_list_of_data = ListStore::new(types_inside_columns);
 
@@ -188,11 +198,11 @@ fn main() {
             for o in &p.get_options() {
                 model_for_combo.insert_with_values(None, &[(0, &o)]);
             }
-            model_list_of_data.insert_with_values(None, 
+            model_list_of_data.insert_with_values(None,
                 &[
-                    ( 0, &p.get_id() ), 
-                    ( 1, &p.get_name() ), 
-                    ( 2, &model_for_combo ), 
+                    ( 0, &p.get_id() ),
+                    ( 1, &p.get_name() ),
+                    ( 2, &model_for_combo ),
                     ( 3, &p.get_options()[ p.get_default_index() ] )
                 ]);
         }
@@ -228,21 +238,21 @@ fn main() {
         object_to_render_cells_3.set_has_entry(false); //whether it also has a text entry besides the combo options
 
         // set column 3 of list model to selected value from combo so that it will be displayed once selected
-        object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move |_cell, list_path, combo_selected_iter| { 
+        object_to_render_cells_3.connect_changed( gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move |_cell, list_path, combo_selected_iter| {
             if let Some(list_iter) = l.iter(&list_path) {
                 if let Ok(combo_model) = l.get_value(&list_iter, 2).get::<ListStore>() {
                     if let Ok(combo_selected_value) = combo_model.get_value(combo_selected_iter, 0).get::<String>() {
-                        l.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
+                        l.set_value(&list_iter, 3, &combo_selected_value.to_value() );
 
                         let param_id = list_path.indices()[0];
                         let param_index = combo_model.path(combo_selected_iter).indices()[0];
                         //if let Some(ref mut xx) = conn_out {
-                            param_changed(conn_out, param_id.try_into().unwrap(), param_index, &combo_selected_value);
+                            param_changed(conn_out, param_id, param_index, &combo_selected_value);
                         //}
                     }
                 }
             }
-        } ) );
+        }));
 
         // use the combo model for the options
         // object_to_render_cells_3.set_model(Some(&model_for_combo)); //only set model here if same model for each row
@@ -262,7 +272,7 @@ fn main() {
         view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); 
 
         view_list.append_column(&view_column_3);
-        
+
         view_list.expand_all();
 
         let scrolled_window = gtk::ScrolledWindow::builder()
@@ -323,35 +333,38 @@ fn main() {
             glib::Continue(true)
         }) );
 
-        if let Some(a) = &mut *conn_out.borrow_mut() {
-            for param in &params {
-                sleep(Duration::from_millis(200));
-                match read_param(a, param.get_id() ) {
-                    Ok(_a) => (),
-                    Err(_e) => panic!("error reading param"),
-                }
-            }
+        if let Some(conn) = &mut *conn_out.borrow_mut() {
+            read_all_params(conn, &params);
         };
     }));
-    
+
     application.run();
 }
 
-fn update_param_row(list: &ListStore, param_row:i32, param_value:i32) {
+fn read_all_params(conn_out: &mut MidiOutputConnection, params: &Vec<Box<dyn GenericOptions>>) {
+    for param in params {
+        sleep(Duration::from_millis(200));
+        match read_param(conn_out, param.get_id()) {
+            Ok(_a) => (),
+            Err(_e) => panic!("error reading param"),
+        }
+    }
+}
+
+fn update_param_row(list: &ListStore, param_row: i32, param_value: i32) {
     println!("Updating ui for param {} to {}.", param_row, param_value);
     //if param_row > -1 && param_row < 23 { //this is already guarded by whether the row_iter exists
-        let row_path = TreePath::from_indices(&[param_row]);
-        if let Some(row_iter) = list.iter(&row_path) {
-
-            if let Ok(combo_liststore) = list.get_value(&row_iter, 2).get::<ListStore>() {
-                let combo_path = TreePath::from_indices(&[param_value]);
-                if let Some(combo_iter) = combo_liststore.iter(&combo_path) {
-                    if let Ok(combo_value) = combo_liststore.get_value(&combo_iter, 0).get::<Value>() {
-                        list.set_value(&row_iter, 3, &combo_value );
-                    }
+    let row_path = TreePath::from_indices(&[param_row]);
+    if let Some(row_iter) = list.iter(&row_path) {
+        if let Ok(combo_liststore) = list.get_value(&row_iter, 2).get::<ListStore>() {
+            let combo_path = TreePath::from_indices(&[param_value]);
+            if let Some(combo_iter) = combo_liststore.iter(&combo_path) {
+                if let Ok(combo_value) = combo_liststore.get_value(&combo_iter, 0).get::<Value>() {
+                    list.set_value(&row_iter, 3, &combo_value);
                 }
             }
         }
+    }
     //}
 }
 
@@ -365,18 +378,26 @@ fn check_for_new_message() {
 
             GLOBAL_UIMODEL.with(|global| {
                 if let Some(uimodel) = &*global.borrow() {
-                    uimodel.label.set_text(&format!("Received: {:02X?}", received));
+                    uimodel
+                        .label
+                        .set_text(&format!("Received: {:02X?}", received));
 
-                    if !received.is_empty() && received.len() >= 7 && received[0] == 0xF0 && received[received.len() - 1] == 0xF7 { //if sysex
+                    if !received.is_empty()
+                        && received.len() >= 7
+                        && received[0] == 0xF0
+                        && received[received.len() - 1] == 0xF7
+                    {
+                        //if sysex
                         let param_row = received[4];
-                
+
                         let msb = received[5];
                         let lsb = received[6];
                         let param_value = 128 * msb as i32 + lsb as i32;
-        
+
                         //let param_row:i32 = 1;
                         //let param_value:i32 = 9;
-                        if param_row != 23 && param_row != 71 { //ignore sliders for now
+                        if param_row != 23 && param_row != 71 {
+                            //ignore sliders for now
                             update_param_row(&uimodel.list_store, param_row.into(), param_value);
                         }
                     }
@@ -386,31 +407,63 @@ fn check_for_new_message() {
     });
 }
 
-fn param_changed(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, id: u8, param_index: i32, value: &str) {
-    println!("changed row index: {}, combo index: {}, value: {:?}", id, param_index, value);
-    GLOBAL_UIMODEL.with(|global| {
-        if let Some(uimodel) = &*global.borrow() {
-            uimodel.label.set_text(""); //clear
-            match set_param(conn_out, id, param_index) {
-                Ok(msg) => {
-                    uimodel.label.set_text(&format!("Set param: {:02X?}", msg));
-                },
-                Err(e) => {
-                    println!("Error setting param: {:?}", e);
+fn param_changed(
+    conn_out: Rc<RefCell<Option<MidiOutputConnection>>>,
+    param_id: i32,
+    param_index: i32,
+    value: &str,
+) {
+    println!(
+        "changed row index: {}, combo index: {}, value: {:?}",
+        param_id, param_index, value
+    );
+    if param_id > -1 && param_id < PARAM_COUNT {
+        GLOBAL_UIMODEL.with(|global| {
+            if let Some(uimodel) = &*global.borrow() {
+                uimodel.label.set_text(""); //clear
+                match set_param(conn_out, param_id.try_into().unwrap(), param_index) {
+                    Ok(msg) => {
+                        uimodel.label.set_text(&format!("Set param: {:02X?}", msg));
+                    }
+                    Err(e) => {
+                        println!("Error setting param: {:?}", e);
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 }
 
-fn set_param(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, param_id: u8, value: i32) -> Result<Vec<u8>, Box<dyn Error>> {
+fn set_param(
+    conn_out: Rc<RefCell<Option<MidiOutputConnection>>>,
+    param_id: u8,
+    value: i32,
+) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut msb = 0;
     let mut lsb = value;
-    if value > 128 { 
-        msb = value / 128; 
-        lsb = value % 128; 
+    if value > 128 {
+        msb = value / 128;
+        lsb = value % 128;
     }
-    let msg:[u8; 17] = [0xf0, 0x04, 0x17, 0x23, param_id, msb.try_into().unwrap(), lsb.try_into().unwrap(), 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
+    let msg: [u8; 17] = [
+        0xf0,
+        0x04,
+        0x17,
+        0x23,
+        param_id,
+        msb.try_into().unwrap(),
+        lsb.try_into().unwrap(),
+        0x0,
+        0x0,
+        0x0,
+        0x0,
+        0x0,
+        0x0,
+        0x0,
+        0x0,
+        0x7f,
+        0xf7,
+    ];
     if let Some(out) = &mut *conn_out.borrow_mut() {
         println!("Sending set param: {:02X?}", msg);
         out.send(&msg)?;
@@ -419,8 +472,11 @@ fn set_param(conn_out: Rc<RefCell<Option<MidiOutputConnection>>>, param_id: u8, 
 }
 
 fn read_param(conn_out: &mut MidiOutputConnection, param_id: u8) -> Result<(), Box<dyn Error>> {
-    let msg: [u8; 17] = [0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f, 0xf7];
-    println!("Request param: {}",  param_id);
+    let msg: [u8; 17] = [
+        0xf0, 0x04, 0x17, 0x3e, param_id, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7f,
+        0xf7,
+    ];
+    println!("Request param: {}", param_id);
     //sleep(Duration::from_millis(200));
     conn_out.send(&msg)?;
 
@@ -430,8 +486,8 @@ fn read_param(conn_out: &mut MidiOutputConnection, param_id: u8) -> Result<(), B
 fn load_css() {
     // Load the CSS file and add it to the provider
     let provider = CssProvider::new();
-    provider.load_from_path("style.css");//or: /User/jeremy/Documents/code/matriarch-settings/style.css
-    //provider.load_from_data(include_bytes!("style.css"));
+    provider.load_from_path("style.css"); //or: /User/jeremy/Documents/code/matriarch-settings/style.css
+                                          //provider.load_from_data(include_bytes!("style.css"));
 
     // Add the provider to the default screen
     StyleContext::add_provider_for_display(
