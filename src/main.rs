@@ -75,7 +75,7 @@ fn main() {
         .build();
 
     application.connect_startup(|_| {
-        adw::init();
+        let _ = adw::init();
         load_css();
     });
 
@@ -162,7 +162,7 @@ fn main() {
         let combo = gtk::ComboBoxText::builder()
             .sensitive(true)
             .build();
-        
+
         if sources.is_empty() {
             combo.append_text("No midi devices connected");
         }
@@ -171,14 +171,14 @@ fn main() {
                 combo.append_text(i);
             }
         }
-        
+
 
         /*for i in 0..50 {
             combo.append_text(format!("row {}", i).as_str());
         }*/
 
         combo.set_active(selected_port);
-        combo.connect_changed( /*gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move */|combo_selected_iter| {
+        combo.connect_changed( /*gtk::glib::clone!( @weak model_list_of_data as l, @weak conn_out => move */| _combo_selected_iter | {
             println!("combo changed");
            /*  if let Some(list_iter) = l.iter(&list_path) {
                 if let Ok(combo_model) = l.get_value(&list_iter, 2).get::<ListStore>() {
@@ -331,7 +331,7 @@ fn main() {
         //https://github.com/gtk-rs/gtk4-rs/blob/9a70b149ca0aad042e7bf0cec3bcd8c781eb62a4/gtk4/README.md
         glib::timeout_add_local(Duration::from_millis(5000), clone!(@weak conn_out => @default-return glib::Continue(true), move || {
             println!("check start");
-            
+
             let midi_in = MidiInput::new("Check input ports").unwrap();
             //let midi_out = MidiOutput::new("Check output ports").unwrap();
 

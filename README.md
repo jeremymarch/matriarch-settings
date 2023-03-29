@@ -1,7 +1,7 @@
 ### An app to set Global Settings on the Moog Matriarch synthesizer
 
-Modeled after: https://mreid.github.io/matriarch-editor/index.html
-See also: https://forum.moogmusic.com/viewtopic.php?t=34523
+Modeled after: https://mreid.github.io/matriarch-editor/index.html  
+See also: https://forum.moogmusic.com/viewtopic.php?t=34523  
 
 
 ## Install
@@ -14,4 +14,3 @@ sudo apt-get install -y libadwaita-1-dev
 ## To do:  
 - Allow to set midi port from combo rather than just selecting moog matriarch port
 - Add gtkcellrenderer hscale (slider)
-- Figure out why gktcellrenderer combos do not scroll

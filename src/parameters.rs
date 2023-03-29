@@ -1,3 +1,4 @@
+#[allow(unused)]
 pub struct ParamListOption {
     id: u8,
     name: String,
@@ -7,6 +8,7 @@ pub struct ParamListOption {
     note: String,
 }
 
+#[allow(unused)]
 pub struct ParamRangeOption {
     id: u8,
     name: String,
