@@ -13,4 +13,7 @@ sudo apt-get install -y libadwaita-1-dev
     
 ## To do:  
 - Allow to set midi port from combo rather than just selecting moog matriarch port
-- Add gtkcellrenderer hscale (slider)
+- Add gtkcellrenderer hscale (slider) (gtk4::Scale in gtk4::CellRenderer)
+
+https://gtk-rs.org/gtk4-rs/git/docs/gtk4/struct.Scale.html  
+https://gtk-rs.org/gtk4-rs/git/docs/gtk4/struct.CellRenderer.html  
