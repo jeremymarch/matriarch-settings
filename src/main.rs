@@ -22,6 +22,7 @@ figure out problem with thread_local
 //use std::sync::Arc;
 //use std::sync::Mutex;
 use crate::glib::clone;
+use crate::glib::ControlFlow;
 use std::rc::Rc;
 
 use crate::glib::Value;
@@ -32,7 +33,6 @@ use gtk::Application;
 use gtk::CssProvider;
 use gtk::Label;
 use gtk::ListStore;
-use gtk::StyleContext;
 use gtk::TreePath;
 use gtk::TreeView;
 use gtk::TreeViewColumn;
@@ -141,7 +141,8 @@ fn main() {
                             glib::source::idle_add(|| {
                                 // tell ui thread to read from channel
                                 check_for_new_message();
-                                glib::source::Continue(false)
+                                // glib::source::Continue(false)
+                                ControlFlow::Break
                             });
                         },
                         tx,
@@ -329,7 +330,7 @@ fn main() {
         window.show();
 
         //https://github.com/gtk-rs/gtk4-rs/blob/9a70b149ca0aad042e7bf0cec3bcd8c781eb62a4/gtk4/README.md
-        glib::timeout_add_local(Duration::from_millis(5000), clone!(@weak conn_out => @default-return glib::Continue(true), move || {
+        glib::timeout_add_local(Duration::from_millis(5000), clone!(@weak conn_out => @default-return ControlFlow::Continue /*glib::Continue(true)*/, move || {
             println!("check start");
 
             let midi_in = MidiInput::new("Check input ports").unwrap();
@@ -369,7 +370,8 @@ fn main() {
                 .set_visible_child(&widgets.main_view.container);
                 */
                 println!("check end");
-            glib::Continue(true)
+            //glib::Continue(true)
+            ControlFlow::Continue
         }) );
 
         if let Some(conn) = &mut *conn_out.borrow_mut() {
@@ -529,7 +531,7 @@ fn load_css() {
                                           //provider.load_from_data(include_bytes!("style.css"));
 
     // Add the provider to the default screen
-    StyleContext::add_provider_for_display(
+    gtk::style_context_add_provider_for_display(
         &Display::default().expect("Could not connect to a display."),
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
