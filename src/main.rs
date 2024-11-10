@@ -184,7 +184,7 @@ fn main() {
            /*  if let Some(list_iter) = l.iter(&list_path) {
                 if let Ok(combo_model) = l.get_value(&list_iter, 2).get::<ListStore>() {
                     if let Ok(combo_selected_value) = combo_model.get_value(combo_selected_iter, 0).get::<String>() {
-                        l.set_value(&list_iter, 3, &combo_selected_value.to_value() ); 
+                        l.set_value(&list_iter, 3, &combo_selected_value.to_value() );
 
                         let param_id = list_path.indices()[0];
                         let param_index = combo_model.path(combo_selected_iter).indices()[0];
@@ -199,7 +199,7 @@ fn main() {
 
         let view_list = TreeView::new();
 
-        let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, gtk::ListStore::static_type(), gtk::glib::Type::STRING];
+        let types_inside_columns = &[gtk::glib::Type::U32, gtk::glib::Type::STRING, ListStore::static_type(), gtk::glib::Type::STRING];
         let model_list_of_data = ListStore::new(types_inside_columns);
 
         for p in &params {
@@ -278,7 +278,7 @@ fn main() {
         // the combo data for each row is in the second column in the tree model
         view_column_3.add_attribute(&object_to_render_cells_3, "model", 2);
         // set selected value here in "changed" signal to display it
-        view_column_3.add_attribute(&object_to_render_cells_3, "text", 3); 
+        view_column_3.add_attribute(&object_to_render_cells_3, "text", 3);
 
         view_list.append_column(&view_column_3);
 
@@ -353,7 +353,7 @@ fn main() {
                         uimodel.sources.set_active(Some(0));
                     }
                     //midi_in.close();
-                    /* 
+                    /*
                     let sources = get_out_sources(&midi_out);
                     for a in &sources {
                         println!("Out: {}", a);
@@ -540,7 +540,7 @@ fn load_css() {
 
 fn get_in_sources(input: &MidiInput) -> Vec<String> {
     let mut v = Vec::new();
-    for (_i, p) in input.ports().iter().enumerate() {
+    for p in input.ports().iter() {
         if let Ok(port) = input.port_name(p) {
             v.push(port);
             //println!("{}: {}", i, port);
@@ -551,7 +551,7 @@ fn get_in_sources(input: &MidiInput) -> Vec<String> {
 
 fn get_out_sources(output: &MidiOutput) -> Vec<String> {
     let mut v = Vec::new();
-    for (_i, p) in output.ports().iter().enumerate() {
+    for p in output.ports().iter() {
         if let Ok(port) = output.port_name(p) {
             v.push(port);
             //println!("{}: {}", i, port);
